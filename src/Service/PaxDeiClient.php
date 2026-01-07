@@ -242,6 +242,23 @@ class PaxDeiClient
         return $counts;
     }
 
+    public function getMinPricesByItem(?string $map = null): array
+    {
+        $listings = $this->fetchAllListings($map);
+        $minPrices = [];
+        
+        foreach ($listings as $listing) {
+            $itemId = $listing->getItemId();
+            $price = $listing->getPrice();
+            
+            if (!isset($minPrices[$itemId]) || $price < $minPrices[$itemId]) {
+                $minPrices[$itemId] = $price;
+            }
+        }
+        
+        return $minPrices;
+    }
+
     public function getListingsByItemAndRegion(string $itemId, string $region, ?string $map = null): array
     {
         $allListings = $this->fetchAllListings($map);

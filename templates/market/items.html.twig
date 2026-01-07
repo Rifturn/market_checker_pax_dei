@@ -56,6 +56,7 @@
                         <th>Nom</th>
                         <th>Rareté</th>
                         <th>Catégorie</th>
+                        <th class="text-center">Prix min</th>
                         {% for region in regions %}
                             <th class="text-center">{{ region }}</th>
                         {% endfor %}
@@ -108,6 +109,13 @@
                                     <span class="badge bg-secondary">{{ item.getCategory().getName() }}</span>
                                 {% else %}
                                     <span class="badge bg-light text-dark">Sans catégorie</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if minPrices[itemId] is defined %}
+                                    <span class="text-success fw-bold">{{ minPrices[itemId] }}🪙</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
                             {% for region in regions %}
