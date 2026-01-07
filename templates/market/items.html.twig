@@ -13,6 +13,12 @@
             object-fit: contain;
             border-radius: var(--radius-sm);
         }
+        .map-button {
+            margin: 0 5px;
+        }
+        .map-button.active {
+            font-weight: bold;
+        }
     </style>
 {% endblock %}
 
@@ -27,6 +33,19 @@
     </div>
     
     <div class="section-divider"></div>
+    
+    {# Boutons pour choisir la map #}
+    <div class="mb-4 text-center">
+        <div class="btn-group" role="group" aria-label="Maps">
+            {% for mapName in availableMaps %}
+                <a href="{{ path('market_items', {'map': mapName}) }}" 
+                   class="btn btn-outline-primary map-button {% if mapName == currentMap %}active{% endif %}"
+                   data-map="{{ mapName }}">
+                    {{ mapName|upper }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
     
     <div class="card">
         <div class="card-body">
@@ -48,15 +67,30 @@
                         {% set itemId = item.getExternalId() %}
                         {% set itemCounts = listingCounts[itemId] ?? {} %}
                         {% set total = itemCounts|length > 0 ? itemCounts|reduce((carry, count) => carry + count, 0) : 0 %}
+                        {% set isRelic = item.getCategory() and item.getCategory().getName() == 'Reliques' %}
+                        {% set isStocked = item.getId() in stockedItemIds %}
+                        {% set isMissingRelic = isRelic and not isStocked %}
                         {% if total > 0 %}
-                        <tr>
+                        <tr {% if isMissingRelic %}class="table-warning"{% endif %}>
                             <td>
-                                <img src="{{ item.getIconPath() }}" alt="{{ item.getName()['Fr'] ?? item.getName()['En'] ?? item.getExternalId() }}" width="32" height="32" loading="lazy">
+                                {% if isMissingRelic %}
+                                    <span class="position-relative">
+                                        <img src="{{ item.getIconPath() }}" alt="{{ item.getName()['Fr'] ?? item.getName()['En'] ?? item.getExternalId() }}" width="32" height="32" loading="lazy">
+                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" title="Relique manquante dans le stock de guilde !">
+                                            ⚠️
+                                        </span>
+                                    </span>
+                                {% else %}
+                                    <img src="{{ item.getIconPath() }}" alt="{{ item.getName()['Fr'] ?? item.getName()['En'] ?? item.getExternalId() }}" width="32" height="32" loading="lazy">
+                                {% endif %}
                             </td>
                             <td>
                                 <a href="{{ item.getUrl() }}" target="_blank" class="text-decoration-none text-reset">
                                     <span class="{% if item.getQuality() == 'rare' %}text-primary fw-bold{% elseif item.getQuality() == 'uncommon' %}text-success fw-bold{% endif %}">
                                         {{ item.getName()['Fr'] ?? item.getName()['En'] ?? item.getExternalId() }}
+                                        {% if isMissingRelic %}
+                                            <span class="badge bg-danger ms-2">RELIQUE MANQUANTE</span>
+                                        {% endif %}
                                     </span>
                                 </a>
                             </td>

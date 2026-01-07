@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\UserView;
 use App\Form\UserViewType;
 use App\Repository\ItemEntityRepository;
+use App\Repository\GuildStockRepository;
 use App\Service\PaxDeiClient;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -87,11 +88,16 @@ class ProfileController extends AbstractController
         return $this->redirectToRoute('app_profile');
     }
 
-    #[Route('/view/{id}', name: 'app_view_show')]
-    public function showView(UserView $view, ItemEntityRepository $itemRepo, PaxDeiClient $client): Response
+    #[Route('/view/{id}/{map}', name: 'app_view_show', defaults: ['map' => 'inis_gallia'])]
+    public function showView(string $map, UserView $view, ItemEntityRepository $itemRepo, GuildStockRepository $guildStockRepo, PaxDeiClient $client): Response
     {
         if ($view->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
+        }
+
+        // Vérifier que la map existe
+        if (!in_array($map, PaxDeiClient::getMaps())) {
+            $map = 'inis_gallia'; // Fallback
         }
 
         // Récupérer les items filtrés
@@ -110,23 +116,38 @@ class ProfileController extends AbstractController
         }
 
         $filteredItems = array_values($filteredItems);
+        
+        // Récupérer les IDs des items en stock
+        $stockedItemIds = $guildStockRepo->getStockedItemIds();
 
-        // Trier par rareté (rare > uncommon > common)
-        usort($filteredItems, function($a, $b) {
+        // Trier : reliques non stockées en premier, puis par rareté
+        usort($filteredItems, function($a, $b) use ($stockedItemIds) {
+            $isRelicA = $a->getCategory() && $a->getCategory()->getName() === 'Reliques';
+            $isRelicB = $b->getCategory() && $b->getCategory()->getName() === 'Reliques';
+            $isStockedA = in_array($a->getId(), $stockedItemIds);
+            $isStockedB = in_array($b->getId(), $stockedItemIds);
+            
+            // Reliques non stockées en premier
+            if ($isRelicA && !$isStockedA && (!$isRelicB || $isStockedB)) {
+                return -1;
+            }
+            if ($isRelicB && !$isStockedB && (!$isRelicA || $isStockedA)) {
+                return 1;
+            }
+            
+            // Ensuite par rareté
             $qualityOrder = ['rare' => 1, 'uncommon' => 2, 'common' => 3];
             $orderA = $qualityOrder[$a->getQuality()] ?? 99;
             $orderB = $qualityOrder[$b->getQuality()] ?? 99;
             return $orderA - $orderB;
         });
 
-        // Récupérer les données de marché
-        $listingCounts = $client->getListingCountsByItemAndRegion();
+        // Récupérer les données de marché pour la map sélectionnée
+        $listingCounts = $client->getListingCountsByItemAndRegion($map);
         
-        $regions = [];
-        foreach ($listingCounts as $counts) {
-            $regions = array_merge($regions, array_keys($counts));
-        }
-        $regions = array_unique($regions);
+        // Récupérer toutes les régions de la map actuelle
+        $regions = PaxDeiClient::getRegions($map);
+        $regions = array_map('ucfirst', $regions);
         sort($regions);
 
         return $this->render('profile/view_show.html.twig', [
@@ -134,6 +155,9 @@ class ProfileController extends AbstractController
             'items' => $filteredItems,
             'listingCounts' => $listingCounts,
             'regions' => $regions,
+            'currentMap' => $map,
+            'availableMaps' => PaxDeiClient::getMaps(),
+            'stockedItemIds' => $stockedItemIds,
         ]);
     }
 }

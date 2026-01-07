@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Repository\ItemEntityRepository;
+use App\Repository\GuildStockRepository;
 use App\Service\PaxDeiClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -11,28 +12,47 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class MarketController extends AbstractController
 {
-    #[Route('/items', name: 'market_items')]
-    public function items(ItemEntityRepository $itemRepository, PaxDeiClient $client): Response
+    #[Route('/items/{map}', name: 'market_items', defaults: ['map' => 'inis_gallia'])]
+    public function items(string $map, ItemEntityRepository $itemRepository, GuildStockRepository $guildStockRepo, PaxDeiClient $client): Response
     {
+        // Vérifier que la map existe
+        if (!in_array($map, PaxDeiClient::getMaps())) {
+            $map = 'inis_gallia'; // Fallback
+        }
+        
         // Récupérer les items depuis la base de données
         $dbItems = $itemRepository->findAllWithCategory();
         
-        // Trier par rareté (rare > uncommon > common)
-        usort($dbItems, function($a, $b) {
+        // Récupérer les IDs des items en stock
+        $stockedItemIds = $guildStockRepo->getStockedItemIds();
+        
+        // Trier : reliques non stockées en premier, puis par rareté
+        usort($dbItems, function($a, $b) use ($stockedItemIds) {
+            $isRelicA = $a->getCategory() && $a->getCategory()->getName() === 'Reliques';
+            $isRelicB = $b->getCategory() && $b->getCategory()->getName() === 'Reliques';
+            $isStockedA = in_array($a->getId(), $stockedItemIds);
+            $isStockedB = in_array($b->getId(), $stockedItemIds);
+            
+            // Reliques non stockées en premier
+            if ($isRelicA && !$isStockedA && (!$isRelicB || $isStockedB)) {
+                return -1;
+            }
+            if ($isRelicB && !$isStockedB && (!$isRelicA || $isStockedA)) {
+                return 1;
+            }
+            
+            // Ensuite par rareté
             $qualityOrder = ['rare' => 1, 'uncommon' => 2, 'common' => 3];
             $orderA = $qualityOrder[$a->getQuality()] ?? 99;
             $orderB = $qualityOrder[$b->getQuality()] ?? 99;
             return $orderA - $orderB;
         });
         
-        $listingCounts = $client->getListingCountsByItemAndRegion();
+        $listingCounts = $client->getListingCountsByItemAndRegion($map);
         
-        // Récupérer toutes les régions uniques
-        $regions = [];
-        foreach ($listingCounts as $counts) {
-            $regions = array_merge($regions, array_keys($counts));
-        }
-        $regions = array_unique($regions);
+        // Récupérer toutes les régions de la map actuelle
+        $regions = PaxDeiClient::getRegions($map);
+        $regions = array_map('ucfirst', $regions);
         sort($regions);
         
         // Récupérer toutes les catégories uniques
@@ -50,6 +70,9 @@ class MarketController extends AbstractController
             'listingCounts' => $listingCounts,
             'regions' => $regions,
             'categories' => $categories,
+            'currentMap' => $map,
+            'availableMaps' => PaxDeiClient::getMaps(),
+            'stockedItemIds' => $stockedItemIds,
         ]);
     }
 

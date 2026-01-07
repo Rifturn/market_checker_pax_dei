@@ -31,6 +31,20 @@ class GuildStockRepository extends ServiceEntityRepository
     //        ;
     //    }
 
+    /**
+     * Retourne les IDs des items présents dans le stock de guilde
+     * @return array<int>
+     */
+    public function getStockedItemIds(): array
+    {
+        $result = $this->createQueryBuilder('g')
+            ->select('IDENTITY(g.item) as item_id')
+            ->getQuery()
+            ->getResult();
+        
+        return array_map(fn($row) => $row['item_id'], $result);
+    }
+
     //    public function findOneBySomeField($value): ?GuildStock
     //    {
     //        return $this->createQueryBuilder('g')

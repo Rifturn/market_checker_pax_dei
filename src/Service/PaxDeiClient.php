@@ -8,19 +8,29 @@ use App\Entity\Listing;
 class PaxDeiClient
 {
     private const ITEMS_URL = 'https://data-cdn.gaming.tools/paxdei/market/items.json';
+    private const BASE_URL = 'https://data-cdn.gaming.tools/paxdei/market/demeter/';
     
-    private const MARKET_URLS = [
-        'https://data-cdn.gaming.tools/paxdei/market/demeter/inis_gallia/atigny.json',
-        'https://data-cdn.gaming.tools/paxdei/market/demeter/inis_gallia/javerdus.json',
-        'https://data-cdn.gaming.tools/paxdei/market/demeter/inis_gallia/morvan.json',
-        'https://data-cdn.gaming.tools/paxdei/market/demeter/inis_gallia/jura.json',
-        'https://data-cdn.gaming.tools/paxdei/market/demeter/inis_gallia/aras.json',
-        'https://data-cdn.gaming.tools/paxdei/market/demeter/inis_gallia/langres.json',
-        'https://data-cdn.gaming.tools/paxdei/market/demeter/inis_gallia/nones.json',
-        'https://data-cdn.gaming.tools/paxdei/market/demeter/inis_gallia/trecassis.json',
-        'https://data-cdn.gaming.tools/paxdei/market/demeter/inis_gallia/vitry.json',
-        'https://data-cdn.gaming.tools/paxdei/market/demeter/inis_gallia/ardennes.json',
+    private const MAPS = [
+        'merrie' => ['shire', 'yarborn', 'caster', 'gael', 'nene', 'ulaid', 'wiht', 'ardbog', 'down', 'bearm'],
+        'ancien' => ['libornes', 'lavedan', 'salias', 'tursan', 'volvestre', 'tolosa', 'armanhac', 'maremna', 'gravas', 'astarac'],
+        'inis_gallia' => ['atigny', 'javerdus', 'morvan', 'jura', 'aras', 'langres', 'nones', 'trecassis', 'vitry', 'ardennes'],
+        'kerys' => ['tremen', 'llydaw', 'pladenn', 'aven', 'ewyas', 'dreger', 'retz', 'dolavon', 'vanes', 'bronyr'],
     ];
+    
+    public static function getMaps(): array
+    {
+        return array_keys(self::MAPS);
+    }
+    
+    public static function getRegions(string $map): array
+    {
+        return self::MAPS[$map] ?? [];
+    }
+    
+    public static function getAllMapsWithRegions(): array
+    {
+        return self::MAPS;
+    }
 
     public function fetchAllItems(): array
     {
@@ -175,12 +185,14 @@ class PaxDeiClient
         return 'Autre';
     }
 
-    public function fetchAllListings(): array
+    public function fetchAllListings(?string $map = null): array
     {
+        $map = $map ?? 'inis_gallia'; // Défaut
+        $regions = self::getRegions($map);
         $allListings = [];
         
-        foreach (self::MARKET_URLS as $url) {
-            $region = $this->extractRegionFromUrl($url);
+        foreach ($regions as $region) {
+            $url = self::BASE_URL . $map . '/' . $region . '.json';
             $json = @file_get_contents($url);
             
             if ($json === false) {
@@ -198,7 +210,7 @@ class PaxDeiClient
                     $listingData['item_id'] ?? '',
                     $listingData['quantity'] ?? 0,
                     $listingData['price'] ?? 0,
-                    $region,
+                    ucfirst($region),
                     $listingData['last_seen'] ?? 0
                 );
             }
@@ -207,9 +219,9 @@ class PaxDeiClient
         return $allListings;
     }
 
-    public function getListingCountsByItemAndRegion(): array
+    public function getListingCountsByItemAndRegion(?string $map = null): array
     {
-        $listings = $this->fetchAllListings();
+        $listings = $this->fetchAllListings($map);
         $counts = [];
         
         foreach ($listings as $listing) {
