@@ -1,0 +1,101 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Stock de Guilde - Reliques{% endblock %}
+
+{% block body %}
+<div class="container-fluid mt-4">
+    <div class="mb-4">
+        <h1>🏛️ Stock de Guilde - Reliques</h1>
+        <p class="text-muted">Consultez les reliques disponibles dans le stock de guilde</p>
+        {% if is_granted('ROLE_ADMIN') %}
+            <a href="{{ path('admin_guild_stock_index') }}" class="btn btn-primary">
+                ⚙️ Gérer le stock (Admin)
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="section-divider"></div>
+
+    {% if stocks|length > 0 %}
+        <div class="card">
+            <div class="card-body">
+                <table id="stockTable" class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Icône</th>
+                            <th>Relique</th>
+                            <th>Quantité</th>
+                            <th>Débloque</th>
+                            <th>Lien</th>
+                            <th>Dernière MAJ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stock in stocks %}
+                            <tr>
+                                <td>
+                                    <img src="{{ stock.item.iconPath }}" alt="{{ stock.item.name['Fr'] ?? stock.item.name['En'] }}" width="32" height="32" loading="lazy">
+                                </td>
+                                <td>
+                                    <strong class="{% if stock.item.quality == 'rare' %}text-primary{% elseif stock.item.quality == 'uncommon' %}text-success{% endif %}">
+                                        {{ stock.item.name['Fr'] ?? stock.item.name['En'] ?? stock.item.externalId }}
+                                    </strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{% if stock.quantity > 0 %}success{% else %}secondary{% endif %} fs-6">
+                                        {{ stock.quantity }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if recipes[stock.item.id] is defined %}
+                                        {% set output = recipes[stock.item.id].output %}
+                                        <div class="d-flex align-items-center gap-2">
+                                            <img src="{{ output.iconPath }}" alt="{{ output.name['Fr'] ?? output.name['En'] }}" width="24" height="24" loading="lazy">
+                                            <a href="{{ output.url }}" target="_blank" class="text-reset text-decoration-none {% if output.quality == 'rare' %}text-primary{% elseif output.quality == 'uncommon' %}text-success{% endif %}">
+                                                {{ output.name['Fr'] ?? output.name['En'] ?? output.externalId }}
+                                            </a>
+                                            {% if recipes[stock.item.id].outputQuantity %}
+                                                <span class="badge bg-secondary">×{{ recipes[stock.item.id].outputQuantity }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted fst-italic">Aucune recette</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ stock.item.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        🔗 Voir
+                                    </a>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ stock.updatedAt|date('d/m/Y H:i') }}</small>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <strong>ℹ️ Aucune relique en stock</strong>
+            <p class="mb-0">Le stock de guilde est actuellement vide.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        $(document).ready(function() {
+            $('#stockTable').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json'
+                },
+                order: [[5, 'desc']],
+                pageLength: 25
+            });
+        });
+    </script>
+{% endblock %}
