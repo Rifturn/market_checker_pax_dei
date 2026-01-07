@@ -1,0 +1,81 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Item: {{ item.name.Fr ?? item.externalId }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>📦 {{ item.name.Fr ?? item.externalId }}</h1>
+    <p class="text-muted">Détails de l'item</p>
+    
+    <div class="section-divider"></div>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>ID</th>
+                <td>{{ item.id }}</td>
+            </tr>
+            <tr>
+                <th>ID Externe (API)</th>
+                <td>{{ item.externalId }}</td>
+            </tr>
+            <tr>
+                <th>Noms (toutes langues)</th>
+                <td>
+                    <ul class="list-unstyled">
+                        {% for lang, name in item.name %}
+                            <li><strong>{{ lang }}:</strong> {{ name }}</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <th>Icône</th>
+                <td>
+                    {% if item.iconPath %}
+                        <img src="{{ item.iconPath }}" alt="Icon" style="max-width: 64px; max-height: 64px;">
+                        <br><small class="text-muted">{{ item.iconPath }}</small>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>URL</th>
+                <td>
+                    {% if item.url %}
+                        <a href="{{ item.url }}" target="_blank">{{ item.url }}</a>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>Catégorie</th>
+                <td>{{ item.category ? item.category.name : 'Aucune' }}</td>
+            </tr>
+            <tr>
+                <th>Date de création</th>
+                <td>{{ item.createdAt|date('d/m/Y H:i:s') }}</td>
+            </tr>
+            <tr>
+                <th>Dernière mise à jour</th>
+                <td>{{ item.updatedAt|date('d/m/Y H:i:s') }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="mb-3">
+        <a href="{{ path('admin_item_edit', {'id': item.id}) }}" class="btn btn-warning">Éditer</a>
+        <a href="{{ path('admin_item_index') }}" class="btn btn-secondary">Retour à la liste</a>
+        {% if item.externalId %}
+            <a href="{{ path('market_items') }}" class="btn btn-info">Voir sur le marché</a>
+        {% endif %}
+    </div>
+
+    <form method="post" action="{{ path('admin_item_delete', {'id': item.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet item ?');">
+        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ item.id) }}">
+        <button class="btn btn-danger">Supprimer</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Nouvel Item{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>➕ Nouvel item</h1>
+    <p class="text-muted">Ajoutez un nouvel item à la base de données</p>
+    
+    <div class="section-divider"></div>
+
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_widget(form) }}
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-success">💾 Créer</button>
+                    <a href="{{ path('admin_item_index') }}" class="btn btn-secondary">❌ Annuler</a>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</div>
+{% endblock %}

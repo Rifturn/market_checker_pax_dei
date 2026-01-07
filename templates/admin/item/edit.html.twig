@@ -1,0 +1,31 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Éditer: {{ item.name.Fr ?? item.externalId }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>✏️ Éditer: {{ item.name.Fr ?? item.externalId }}</h1>
+    <p class="text-muted">Modifiez les informations de l'item</p>
+    
+    <div class="section-divider"></div>
+
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_widget(form) }}
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-success">💾 Enregistrer</button>
+                    <a href="{{ path('admin_item_index') }}" class="btn btn-secondary">❌ Annuler</a>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+
+    <hr class="mt-4">
+
+    <form method="post" action="{{ path('admin_item_delete', {'id': item.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet item ?');">
+        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ item.id) }}">
+        <button class="btn btn-danger">Supprimer cet item</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Administration - Market Checker Pax Dei{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>Tableau de bord Administration</h1>
+    <p class="text-muted">Gérez les catégories et les items de votre base de données</p>
+    
+    <div class="section-divider"></div>
+    
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <h3 class="card-title">📁 Gestion des Catégories</h3>
+                    <p class="card-text text-muted">
+                        Organisez et gérez les catégories d'items du jeu.
+                    </p>
+                    <div class="d-flex gap-2 mt-3">
+                        <a href="{{ path('admin_category_index') }}" class="btn btn-primary">
+                            Voir les catégories
+                        </a>
+                        <a href="{{ path('admin_category_new') }}" class="btn btn-secondary">
+                            ➕ Nouvelle
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <h3 class="card-title">📦 Gestion des Items</h3>
+                    <p class="card-text text-muted">
+                        Gérez les items avec leurs propriétés et catégories.
+                    </p>
+                    <div class="d-flex gap-2 mt-3">
+                        <a href="{{ path('admin_item_index') }}" class="btn btn-primary">
+                            Voir les items
+                        </a>
+                        <a href="{{ path('admin_item_new') }}" class="btn btn-secondary">
+                            ➕ Nouveau
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <h3 class="card-title">🏛️ Stock de Guilde</h3>
+                    <p class="card-text text-muted">
+                        Gérez le stock de reliques de votre guilde.
+                    </p>
+                    <div class="d-flex gap-2 mt-3">
+                        <a href="{{ path('admin_guild_stock_index') }}" class="btn btn-primary">
+                            Voir le stock
+                        </a>
+                        <a href="{{ path('admin_guild_stock_new') }}" class="btn btn-secondary">
+                            ➕ Nouvelle
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">🔄 Synchronisation des données</h3>
+                </div>
+                <div class="card-body">
+                    <h5>Importer depuis l'API Pax Dei</h5>
+                    <p class="text-muted">Mettez à jour votre base de données avec les dernières données de l'API :</p>
+                    <pre><code>php bin/console app:import-items</code></pre>
+                    <div class="alert alert-info">
+                        <strong>💡 Astuce :</strong> Ajoutez <code>--force</code> pour mettre à jour les items existants.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-divider"></div>
+    
+    <div class="text-center">
+        <a href="{{ path('market_items') }}" class="btn btn-secondary">
+            ← Retour au marché public
+        </a>
+    </div>
+</div>
+{% endblock %}

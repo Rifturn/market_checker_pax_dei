@@ -1,0 +1,68 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Catégorie: {{ category.name }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>� {{ category.name }}</h1>
+    <p class="text-muted">Détails de la catégorie</p>
+    
+    <div class="section-divider"></div>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>ID</th>
+                <td>{{ category.id }}</td>
+            </tr>
+            <tr>
+                <th>Nom</th>
+                <td>{{ category.name }}</td>
+            </tr>
+            <tr>
+                <th>Slug</th>
+                <td>{{ category.slug }}</td>
+            </tr>
+            <tr>
+                <th>Nombre d'items</th>
+                <td>{{ category.items|length }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="mb-3">
+        <a href="{{ path('admin_category_edit', {'id': category.id}) }}" class="btn btn-warning">Éditer</a>
+        <a href="{{ path('admin_category_index') }}" class="btn btn-secondary">Retour à la liste</a>
+    </div>
+
+    <form method="post" action="{{ path('admin_category_delete', {'id': category.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?');">
+        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ category.id) }}">
+        <button class="btn btn-danger">Supprimer</button>
+    </form>
+
+    {% if category.items|length > 0 %}
+    <h2 class="mt-4">Items de cette catégorie ({{ category.items|length }})</h2>
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nom (FR)</th>
+                <th>ID Externe</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in category.items|slice(0, 50) %}
+            <tr>
+                <td>{{ item.id }}</td>
+                <td>{{ item.name.Fr ?? 'N/A' }}</td>
+                <td>{{ item.externalId }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% if category.items|length > 50 %}
+        <p class="text-muted">Affichage des 50 premiers items sur {{ category.items|length }}</p>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

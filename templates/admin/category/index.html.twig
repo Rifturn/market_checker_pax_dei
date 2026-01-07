@@ -1,0 +1,59 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Gestion des Catégories{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>📁 Gestion des Catégories</h1>
+    <p class="text-muted">Organisez vos items par catégories</p>
+    
+    <div class="mb-4 d-flex gap-2">
+        <a href="{{ path('admin_category_new') }}" class="btn btn-primary">➕ Nouvelle catégorie</a>
+        <a href="/admin" class="btn btn-secondary">← Dashboard</a>
+    </div>
+
+    <div class="table-responsive">
+        <table id="categoriesTable" class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nom</th>
+                    <th>Slug</th>
+                    <th>Nombre d'items</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for category in categories %}
+                <tr>
+                    <td>{{ category.id }}</td>
+                    <td><strong>{{ category.name }}</strong></td>
+                    <td><em>{{ category.slug }}</em></td>
+                    <td><span class="badge bg-primary">{{ category.items|length }}</span></td>
+                    <td>
+                        <a href="{{ path('admin_category_show', {'id': category.id}) }}" class="btn btn-sm btn-info">👁️ Voir</a>
+                        <a href="{{ path('admin_category_edit', {'id': category.id}) }}" class="btn btn-sm btn-warning">✏️ Éditer</a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="5">Aucune catégorie trouvée</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    $('#categoriesTable').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json'
+        },
+        pageLength: 25,
+        order: [[1, 'asc']]
+    });
+});
+</script>
+{% endblock %}

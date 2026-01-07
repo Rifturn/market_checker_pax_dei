@@ -1,0 +1,155 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ view.id ? 'Modifier' : 'Nouvelle' }} vue - Pax Dei Market{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.css">
+    <style>
+        .card-body {
+            overflow: visible !important;
+        }
+        .ts-dropdown {
+            z-index: 9999 !important;
+        }
+        .ts-control {
+            overflow: visible !important;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>{{ view.id ? '✏️ Modifier' : '➕ Nouvelle' }} vue</h1>
+            <p class="text-muted">Personnalisez votre vue en sélectionnant catégories et items</p>
+        </div>
+        <a href="{{ path('app_profile') }}" class="btn btn-outline-secondary">
+            ⬅️ Retour au profil
+        </a>
+    </div>
+
+    <div class="section-divider"></div>
+
+    {{ form_start(form, {'attr': {'id': 'view-form'}}) }}
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">📝 Informations générales</h5>
+        </div>
+        <div class="card-body">
+            {{ form_row(form.name, {
+                'label': 'Nom de la vue',
+                'attr': {'class': 'form-control', 'placeholder': 'Ex: Ressources de craft, Items rares...'}
+            }) }}
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">📁 Catégories</h5>
+            <small class="text-muted">Tous les items de ces catégories seront inclus</small>
+        </div>
+        <div class="card-body">
+            {{ form_row(form.categories, {
+                'label': 'Sélectionnez les catégories',
+                'attr': {'class': 'category-select'}
+            }) }}
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">📦 Items spécifiques</h5>
+            <small class="text-muted">Ajoutez des items individuels (en plus des catégories). Utilisez la recherche pour trouver un item parmi les {{ form.items.vars.choices|length }} disponibles.</small>
+        </div>
+        <div class="card-body">
+            {{ form_row(form.items, {
+                'label': 'Sélectionnez les items',
+                'attr': {'class': 'item-select'}
+            }) }}
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between">
+        <a href="{{ path('app_profile') }}" class="btn btn-secondary">
+            Annuler
+        </a>
+        <button type="submit" class="btn btn-primary">
+            💾 {{ view.id ? 'Enregistrer' : 'Créer la vue' }}
+        </button>
+    </div>
+
+    {{ form_end(form) }}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Récupérer le mapping catégorie -> items depuis le DOM
+            var categoryToItems = {};
+            var itemSelect = document.querySelector('.item-select');
+            
+            if (itemSelect) {
+                // Parcourir les optgroups (catégories) et leurs options (items)
+                Array.from(itemSelect.querySelectorAll('optgroup')).forEach(function(optgroup) {
+                    var categoryName = optgroup.label;
+                    categoryToItems[categoryName] = Array.from(optgroup.querySelectorAll('option')).map(function(opt) {
+                        return opt.value;
+                    });
+                });
+            }
+            
+            // Initialiser Tom Select pour les catégories
+            var categorySelectInstance = new TomSelect('.category-select', {
+                plugins: ['remove_button'],
+                placeholder: 'Sélectionnez une ou plusieurs catégories...',
+                dropdownParent: 'body',
+                onChange: function(values) {
+                    // Auto-sélection des items quand une catégorie est sélectionnée
+                    if (values.length > 0 && itemSelectInstance) {
+                        var itemsToSelect = [];
+                        
+                        // Pour chaque catégorie sélectionnée
+                        values.forEach(function(categoryId) {
+                            // Trouver le nom de la catégorie
+                            var categoryOption = document.querySelector('.category-select option[value="' + categoryId + '"]');
+                            if (categoryOption) {
+                                var categoryName = categoryOption.text;
+                                // Ajouter tous les items de cette catégorie
+                                if (categoryToItems[categoryName]) {
+                                    itemsToSelect = itemsToSelect.concat(categoryToItems[categoryName]);
+                                }
+                            }
+                        });
+                        
+                        // Ajouter les items trouvés à la sélection existante
+                        var currentItems = itemSelectInstance.getValue();
+                        itemsToSelect.forEach(function(itemId) {
+                            if (!currentItems.includes(itemId)) {
+                                itemSelectInstance.addItem(itemId, true);
+                            }
+                        });
+                    }
+                }
+            });
+            
+            // Initialiser Tom Select pour les items
+            var itemSelectInstance = new TomSelect('.item-select', {
+                plugins: ['remove_button', 'optgroup_columns'],
+                placeholder: 'Sélectionnez un ou plusieurs items...',
+                maxOptions: 50,
+                dropdownParent: 'body',
+                render: {
+                    no_results: function(data, escape) {
+                        return '<div class="no-results">Aucun résultat trouvé pour "' + escape(data.input) + '"</div>';
+                    },
+                }
+            });
+        });
+    </script>
+{% endblock %}
