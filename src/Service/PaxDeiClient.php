@@ -242,9 +242,9 @@ class PaxDeiClient
         return $counts;
     }
 
-    public function getListingsByItemAndRegion(string $itemId, string $region): array
+    public function getListingsByItemAndRegion(string $itemId, string $region, ?string $map = null): array
     {
-        $allListings = $this->fetchAllListings();
+        $allListings = $this->fetchAllListings($map);
         
         return array_filter($allListings, function($listing) use ($itemId, $region) {
             return $listing->getItemId() === $itemId && $listing->getZone() === $region;

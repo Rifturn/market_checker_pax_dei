@@ -118,7 +118,7 @@
                                 {% for region in regions %}
                                     <td class="text-center">
                                         {% if itemCounts[region] is defined and itemCounts[region] > 0 %}
-                                            <a href="{{ path('market_item_region_details', {itemId: item.externalId, region: region, returnUrl: path('app_view_show', {id: view.id})}) }}" class="badge bg-success text-decoration-none">
+                                            <a href="{{ path('market_item_region_details', {itemId: item.externalId, region: region, map: currentMap, returnUrl: path('app_view_show', {id: view.id, map: currentMap})}) }}" class="badge bg-success text-decoration-none">
                                                 {{ itemCounts[region] }}
                                             </a>
                                         {% else %}
@@ -127,7 +127,7 @@
                                     </td>
                                 {% endfor %}
                                 <td class="text-center">
-                                    <a href="{{ path('market_item_all_regions', {itemId: item.externalId, returnUrl: path('app_view_show', {id: view.id})}) }}" class="text-decoration-none">
+                                    <a href="{{ path('market_item_all_regions', {itemId: item.externalId, map: currentMap, returnUrl: path('app_view_show', {id: view.id, map: currentMap})}) }}" class="text-decoration-none">
                                         <strong>{{ total }}</strong>
                                     </a>
                                 </td>

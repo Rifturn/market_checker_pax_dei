@@ -113,10 +113,10 @@ class MarketController extends AbstractController
         ]);
     }
 
-    #[Route('/items/{itemId}/region/{region}', name: 'market_item_region_details')]
-    public function itemRegionDetails(string $itemId, string $region, Request $request, ItemEntityRepository $itemRepository, PaxDeiClient $client): Response
+    #[Route('/items/{itemId}/region/{region}/{map}', name: 'market_item_region_details', defaults: ['map' => 'inis_gallia'])]
+    public function itemRegionDetails(string $itemId, string $region, string $map, Request $request, ItemEntityRepository $itemRepository, PaxDeiClient $client): Response
     {
-        $listings = $client->getListingsByItemAndRegion($itemId, $region);
+        $listings = $client->getListingsByItemAndRegion($itemId, $region, $map);
         
         // Trouver l'item correspondant dans la BDD
         $item = $itemRepository->findByExternalId($itemId);
@@ -132,20 +132,20 @@ class MarketController extends AbstractController
         ]);
     }
 
-    #[Route('/items/{itemId}/all-regions', name: 'market_item_all_regions')]
-    public function itemAllRegions(string $itemId, Request $request, ItemEntityRepository $itemRepository, PaxDeiClient $client): Response
+    #[Route('/items/{itemId}/all-regions/{map}', name: 'market_item_all_regions', defaults: ['map' => 'inis_gallia'])]
+    public function itemAllRegions(string $itemId, string $map, Request $request, ItemEntityRepository $itemRepository, PaxDeiClient $client): Response
     {
         // Trouver l'item correspondant dans la BDD
         $item = $itemRepository->findByExternalId($itemId);
         
-        // Récupérer les listings par région
+        // Récupérer les listings par région pour la map spécifiée
         $listingsByRegion = [];
-        $listingCounts = $client->getListingCountsByItemAndRegion();
+        $listingCounts = $client->getListingCountsByItemAndRegion($map);
         
         if (isset($listingCounts[$itemId])) {
             foreach ($listingCounts[$itemId] as $region => $count) {
                 if ($count > 0) {
-                    $listingsByRegion[$region] = $client->getListingsByItemAndRegion($itemId, $region);
+                    $listingsByRegion[$region] = $client->getListingsByItemAndRegion($itemId, $region, $map);
                 }
             }
         }
