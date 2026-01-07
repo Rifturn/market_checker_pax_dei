@@ -49,6 +49,7 @@
                 <h4 class="mb-0">🌍 {{ region }} ({{ listings|length }} vente(s))</h4>
             </div>
             <div class="card-body">
+                <div class="table-responsive">
                 <table id="listingsTable" class="table table-striped table-hover">
                     <thead>
                         <tr>
@@ -84,6 +85,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     {% else %}
@@ -105,6 +107,8 @@
             $('#listingsTable').DataTable({
                 order: [[4, 'asc']],
                 pageLength: 10,
+                scrollX: true,
+                autoWidth: false,
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json'
                 }

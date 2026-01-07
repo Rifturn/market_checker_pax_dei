@@ -55,6 +55,7 @@
     {% if items|length > 0 %}
         <div class="card">
             <div class="card-body">
+                <div class="table-responsive">
                 <table id="itemsTable" class="table table-striped table-hover">
                     <thead>
                         <tr>
@@ -144,6 +145,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     {% else %}
@@ -169,6 +171,8 @@
             var table = $('#itemsTable').DataTable({
                 "pageLength": 25,
                 "order": [],  // Pas de tri automatique, garder l'ordre du serveur (par rareté)
+                "scrollX": true,
+                "autoWidth": false,
                 "language": {
                     "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json"
                 },
