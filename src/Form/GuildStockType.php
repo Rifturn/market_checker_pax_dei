@@ -44,7 +44,8 @@ class GuildStockType extends AbstractType
                            ->setParameter('excludedIds', $excludedItemIds);
                     }
                     
-                    return $qb->orderBy('i.name', 'ASC');
+                    // Tri par externalId à défaut (le champ name étant JSON)
+                    return $qb->orderBy('i.externalId', 'ASC');
                 },
                 'label' => 'Relique',
                 'attr' => ['class' => 'item-select'],
