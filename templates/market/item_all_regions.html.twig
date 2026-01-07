@@ -62,6 +62,7 @@
                                     <th>Quantité</th>
                                     <th>Prix (gold)</th>
                                     <th>Prix unitaire</th>
+                                    <th>Dernière vue</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -72,6 +73,18 @@
                                         <td><span class="badge bg-info">{{ listing.quantity }}</span></td>
                                         <td><strong>{{ listing.price }}</strong> 🪙</td>
                                         <td>{{ (listing.price / listing.quantity)|number_format(2) }} 🪙</td>
+                                        <td data-order="{{ listing.last_seen }}">
+                                            {% set lastSeenDate = listing.last_seen|date('Y-m-d H:i') %}
+                                            {% set now = 'now'|date('U') %}
+                                            {% set diff = now - listing.last_seen %}
+                                            {% if diff < 3600 %}
+                                                <span class="badge bg-success" title="{{ lastSeenDate }}">{{ (diff / 60)|round }} min</span>
+                                            {% elseif diff < 86400 %}
+                                                <span class="badge bg-info" title="{{ lastSeenDate }}">{{ (diff / 3600)|round }} h</span>
+                                            {% else %}
+                                                <span class="badge bg-warning" title="{{ lastSeenDate }}">{{ (diff / 86400)|round }} j</span>
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                 {% endfor %}
                             </tbody>

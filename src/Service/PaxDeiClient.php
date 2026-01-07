@@ -259,6 +259,23 @@ class PaxDeiClient
         return $minPrices;
     }
 
+    public function getLastSeenByItem(?string $map = null): array
+    {
+        $listings = $this->fetchAllListings($map);
+        $lastSeen = [];
+        
+        foreach ($listings as $listing) {
+            $itemId = $listing->getItemId();
+            $timestamp = $listing->getLastSeen();
+            
+            if (!isset($lastSeen[$itemId]) || $timestamp > $lastSeen[$itemId]) {
+                $lastSeen[$itemId] = $timestamp;
+            }
+        }
+        
+        return $lastSeen;
+    }
+
     public function getListingsByItemAndRegion(string $itemId, string $region, ?string $map = null): array
     {
         $allListings = $this->fetchAllListings($map);

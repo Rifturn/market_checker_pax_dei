@@ -53,6 +53,9 @@ class MarketController extends AbstractController
         // Récupérer les prix minimaux
         $minPrices = $client->getMinPricesByItem($map);
         
+        // Récupérer les dernières dates de vue
+        $lastSeenByItem = $client->getLastSeenByItem($map);
+        
         // Récupérer toutes les régions de la map actuelle
         $regions = PaxDeiClient::getRegions($map);
         $regions = array_map('ucfirst', $regions);
@@ -77,6 +80,7 @@ class MarketController extends AbstractController
             'availableMaps' => PaxDeiClient::getMaps(),
             'stockedItemIds' => $stockedItemIds,
             'minPrices' => $minPrices,
+            'lastSeenByItem' => $lastSeenByItem,
         ]);
     }
 
