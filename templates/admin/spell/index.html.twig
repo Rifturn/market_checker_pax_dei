@@ -1,0 +1,65 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Gestion des Sorts{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>🔮 Gestion des Sorts</h1>
+    <p class="text-muted">Gérez les sorts et compétences du jeu</p>
+    
+    <div class="mb-4 d-flex gap-2">
+        <a href="{{ path('admin_spell_new') }}" class="btn btn-primary">➕ Nouveau sort</a>
+        <a href="/admin" class="btn btn-secondary">← Dashboard</a>
+    </div>
+
+    <div class="table-responsive">
+        <table id="spellsTable" class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nom</th>
+                    <th>ID Externe</th>
+                    <th>Cooldown</th>
+                    <th>Portée</th>
+                    <th>Coût</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for spell in spells %}
+                <tr>
+                    <td>{{ spell.id }}</td>
+                    <td><strong>{{ spell.name }}</strong></td>
+                    <td><code>{{ spell.externalId }}</code></td>
+                    <td>{{ spell.cooldownDuration ? spell.cooldownDuration ~ 's' : '-' }}</td>
+                    <td>{{ spell.range ? spell.range : '-' }}</td>
+                    <td>{{ spell.costAmountMin ? spell.costAmountMin ~ ' ' ~ spell.costAttribute : '-' }}</td>
+                    <td>
+                        <a href="{{ path('admin_spell_show', {'id': spell.id}) }}" class="btn btn-sm btn-info">👁️ Voir</a>
+                        <a href="{{ path('admin_spell_edit', {'id': spell.id}) }}" class="btn btn-sm btn-warning">✏️ Éditer</a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="7">Aucun sort trouvé</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    $('#spellsTable').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json'
+        },
+        pageLength: 25,
+        order: [[1, 'asc']],
+        scrollX: true,
+        autoWidth: false
+    });
+});
+</script>
+{% endblock %}

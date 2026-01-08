@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Éditer {{ avatar.name }} - Pax Dei Market{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>✏️ Éditer mon avatar</h1>
+    <p class="text-muted">Modifiez les informations de votre avatar</p>
+    
+    <div class="section-divider"></div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    {{ form_start(form) }}
+                        {{ form_row(form.name) }}
+                        
+                        <div class="d-grid gap-2 mt-3">
+                            <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+                            <a href="{{ path('avatar_show', {'id': avatar.id}) }}" class="btn btn-secondary">← Annuler</a>
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Informations</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Compétences:</strong> {{ avatar.avatarSkills|length }}</p>
+                    <p><strong>Créé le:</strong> {{ avatar.createdAt|date('d/m/Y') }}</p>
+                    
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="{{ path('avatar_show', {'id': avatar.id}) }}" class="btn btn-info btn-sm">👁️ Voir l'avatar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

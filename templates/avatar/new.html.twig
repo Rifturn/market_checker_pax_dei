@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Créer mon avatar - Pax Dei Market{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>👤 Créer mon avatar</h1>
+    <p class="text-muted">Créez votre avatar pour suivre vos compétences</p>
+    
+    <div class="section-divider"></div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    {{ form_start(form) }}
+                        {{ form_row(form.name) }}
+                        
+                        <div class="d-grid gap-2 mt-3">
+                            <button type="submit" class="btn btn-primary">✅ Créer l'avatar</button>
+                            <a href="{{ path('avatar_index') }}" class="btn btn-secondary">← Annuler</a>
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="alert alert-info">
+                <h5>ℹ️ Information</h5>
+                <p>Vous ne pouvez créer qu'un seul avatar par compte.</p>
+                <p>Après création, vous pourrez ajouter vos compétences et suivre votre progression.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Spells - Pax Dei Market{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>✨ Spells</h1>
+    <p class="text-muted">Liste des sorts et capacités disponibles</p>
+    
+    <div class="section-divider"></div>
+
+    <div class="row">
+        {% for spell in spells %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        {% if spell.iconPath %}
+                        <img src="{{ spell.iconPath|spell_icon_url }}" alt="{{ spell.name }}" class="me-3" style="width: 48px; height: 48px; background-color: #1e3a5f; padding: 4px; border-radius: 4px;">
+                        {% endif %}
+                        <h5 class="card-title mb-0">{{ spell.name }}</h5>
+                    </div>
+                    
+                    {% if spell.description %}
+                    <p class="card-text text-muted small">{{ spell.description|raw|striptags|slice(0, 150) }}{% if spell.description|length > 150 %}...{% endif %}</p>
+                    {% endif %}
+                    
+                    <div class="mb-2">
+                        {% if spell.cooldownDuration %}
+                        <span class="badge bg-info">⏱️ {{ spell.cooldownDuration }}s</span>
+                        {% endif %}
+                        {% if spell.range %}
+                        <span class="badge bg-secondary">📏 {{ spell.range }}m</span>
+                        {% endif %}
+                        {% if spell.costAttribute %}
+                        <span class="badge bg-warning text-dark">💰 {{ spell.costAttribute }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <a href="{{ path('spell_show', {'id': spell.id}) }}" class="btn btn-primary btn-sm">Voir détails</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% if spells|length == 0 %}
+    <div class="alert alert-info">
+        Aucun spell disponible pour le moment.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

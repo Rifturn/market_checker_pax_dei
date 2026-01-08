@@ -62,6 +62,26 @@
                 <th>Dernière mise à jour</th>
                 <td>{{ item.updatedAt|date('d/m/Y H:i:s') }}</td>
             </tr>
+            {% if spellItems|length > 0 %}
+            <tr>
+                <th>Spell associé</th>
+                <td>
+                    {% for spellItem in spellItems %}
+                        <div class="mb-2">
+                            <a href="{{ path('admin_spell_show', {'id': spellItem.spell.id}) }}" class="btn btn-sm btn-primary">
+                                ✨ {{ spellItem.spell.name }}
+                            </a>
+                            {% if spellItem.spell.cooldownDuration %}
+                                <span class="badge bg-info">Cooldown: {{ spellItem.spell.cooldownDuration }}s</span>
+                            {% endif %}
+                            {% if spellItem.spell.description %}
+                                <div class="mt-1 text-muted small">{{ spellItem.spell.description|raw }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endif %}
         </tbody>
     </table>
 

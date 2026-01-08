@@ -1,0 +1,85 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Sort: {{ spell.name }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>🔮 {{ spell.name }}</h1>
+    <p class="text-muted">Détails du sort</p>
+    
+    <div class="section-divider"></div>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>ID</th>
+                <td>{{ spell.id }}</td>
+            </tr>
+            <tr>
+                <th>ID Externe</th>
+                <td><code>{{ spell.externalId }}</code></td>
+            </tr>
+            <tr>
+                <th>Nom</th>
+                <td><strong>{{ spell.name }}</strong></td>
+            </tr>
+            <tr>
+                <th>Icône</th>
+                <td>{{ spell.iconPath ?? 'N/A' }}</td>
+            </tr>
+            <tr>
+                <th>Description</th>
+                <td>{{ spell.description ? spell.description|raw : 'N/A' }}</td>
+            </tr>
+            <tr>
+                <th>Cooldown</th>
+                <td>{{ spell.cooldownDuration ? spell.cooldownDuration ~ ' secondes' : 'N/A' }}</td>
+            </tr>
+            <tr>
+                <th>Portée</th>
+                <td>{{ spell.range ? spell.range : 'N/A' }}</td>
+            </tr>
+            <tr>
+                <th>Attribut de coût</th>
+                <td>{{ spell.costAttribute ?? 'N/A' }}</td>
+            </tr>
+            <tr>
+                <th>Coût minimum</th>
+                <td>{{ spell.costAmountMin ?? 'N/A' }}</td>
+            </tr>
+            <tr>
+                <th>Type d'entité</th>
+                <td>{{ spell.entityType }}</td>
+            </tr>
+            <tr>
+                <th>Nom du type</th>
+                <td>{{ spell.entityTypeName }}</td>
+            </tr>
+            <tr>
+                <th>Chemin de listing</th>
+                <td>{{ spell.listingPath }}</td>
+            </tr>
+            <tr>
+                <th>Catégories</th>
+                <td>
+                    {% if spell.categoryIds and spell.categoryIds|length > 0 %}
+                        {{ spell.categoryIds|join(', ') }}
+                    {% else %}
+                        Aucune catégorie
+                    {% endif %}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="mb-3">
+        <a href="{{ path('admin_spell_edit', {'id': spell.id}) }}" class="btn btn-warning">Éditer</a>
+        <a href="{{ path('admin_spell_index') }}" class="btn btn-secondary">Retour à la liste</a>
+    </div>
+
+    <form method="post" action="{{ path('admin_spell_delete', {'id': spell.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce sort ?');">
+        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ spell.id) }}">
+        <button class="btn btn-danger">Supprimer</button>
+    </form>
+</div>
+{% endblock %}

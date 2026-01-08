@@ -12,7 +12,7 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class MarketController extends AbstractController
 {
-    #[Route('/items/{map}', name: 'market_items', defaults: ['map' => 'inis_gallia'])]
+    #[Route('/market/{map}', name: 'market_items', defaults: ['map' => 'inis_gallia'])]
     public function items(string $map, ItemEntityRepository $itemRepository, GuildStockRepository $guildStockRepo, PaxDeiClient $client): Response
     {
         // Vérifier que la map existe
@@ -121,7 +121,7 @@ class MarketController extends AbstractController
         ]);
     }
 
-    #[Route('/items/{itemId}/region/{region}/{map}', name: 'market_item_region_details', defaults: ['map' => 'inis_gallia'])]
+    #[Route('/market/{itemId}/region/{region}/{map}', name: 'market_item_region_details', defaults: ['map' => 'inis_gallia'])]
     public function itemRegionDetails(string $itemId, string $region, string $map, Request $request, ItemEntityRepository $itemRepository, PaxDeiClient $client): Response
     {
         $listings = $client->getListingsByItemAndRegion($itemId, $region, $map);
@@ -140,7 +140,7 @@ class MarketController extends AbstractController
         ]);
     }
 
-    #[Route('/items/{itemId}/all-regions/{map}', name: 'market_item_all_regions', defaults: ['map' => 'inis_gallia'])]
+    #[Route('/market/{itemId}/all-regions/{map}', name: 'market_item_all_regions', defaults: ['map' => 'inis_gallia'])]
     public function itemAllRegions(string $itemId, string $map, Request $request, ItemEntityRepository $itemRepository, PaxDeiClient $client): Response
     {
         // Trouver l'item correspondant dans la BDD

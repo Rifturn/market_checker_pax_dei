@@ -1,0 +1,63 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Avatars - Admin{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>👤 Gestion des Avatars</h1>
+    <p class="text-muted">Liste de tous les avatars créés</p>
+    
+    <div class="section-divider"></div>
+
+    <div class="mb-3">
+        <a href="{{ path('admin_avatar_new') }}" class="btn btn-primary">➕ Créer un avatar</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped" id="avatarsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nom</th>
+                    <th>Utilisateur</th>
+                    <th>Nb Skills</th>
+                    <th>Créé le</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for avatar in avatars %}
+                <tr>
+                    <td>{{ avatar.id }}</td>
+                    <td>{{ avatar.name }}</td>
+                    <td>{{ avatar.user.username }}</td>
+                    <td><span class="badge bg-info">{{ avatar.avatarSkills|length }}</span></td>
+                    <td>{{ avatar.createdAt|date('d/m/Y H:i') }}</td>
+                    <td>
+                        <a href="{{ path('admin_avatar_show', {'id': avatar.id}) }}" class="btn btn-sm btn-info">👁️</a>
+                        <a href="{{ path('admin_avatar_edit', {'id': avatar.id}) }}" class="btn btn-sm btn-warning">✏️</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center">Aucun avatar trouvé</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if avatars|length > 0 %}
+<script>
+$(document).ready(function() {
+    $('#avatarsTable').DataTable({
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json"
+        },
+        "order": [[4, "desc"]]
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

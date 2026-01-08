@@ -1,0 +1,129 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ spell.name }} - Pax Dei Market{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>✨ {{ spell.name }}</h1>
+    <p class="text-muted">Détails du sort</p>
+    
+    <div class="section-divider"></div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <th style="width: 30%;">Nom</th>
+                                <td>{{ spell.name }}</td>
+                            </tr>
+                            {% if spell.iconPath %}
+                            <tr>
+                                <th>Icône</th>
+                                <td>
+                                    <img src="{{ spell.iconPath|spell_icon_url }}" alt="{{ spell.name }}" style="max-width: 64px; max-height: 64px; background-color: #1e3a5f; padding: 6px; border-radius: 6px;">
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if spell.description %}
+                            <tr>
+                                <th>Description</th>
+                                <td>{{ spell.description|raw }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if spell.cooldownDuration %}
+                            <tr>
+                                <th>Cooldown</th>
+                                <td>{{ spell.cooldownDuration }} secondes</td>
+                            </tr>
+                            {% endif %}
+                            {% if spell.range %}
+                            <tr>
+                                <th>Portée</th>
+                                <td>{{ spell.range }} mètres</td>
+                            </tr>
+                            {% endif %}
+                            {% if spell.costAttribute %}
+                            <tr>
+                                <th>Coût</th>
+                                <td>
+                                    {{ spell.costAttribute }}
+                                    {% if spell.costAmountMin %}
+                                        ({{ spell.costAmountMin }})
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if spell.entityType %}
+                            <tr>
+                                <th>Type</th>
+                                <td>{{ spell.entityTypeName ?? spell.entityType }}</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {% set spellItems = spell.spellItems %}
+            {% if spellItems|length > 0 %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📦 Items qui débloquent ce sort</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for spellItem in spellItems %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-{% if spellItem.item.quality == 'rare' %}primary{% elseif spellItem.item.quality == 'uncommon' %}success{% else %}secondary{% endif %}">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center flex-grow-1">
+                                            {% if spellItem.item.iconPath %}
+                                            <img src="{{ spellItem.item.iconPath }}" alt="{{ spellItem.item.name.Fr ?? spellItem.item.externalId }}" class="me-3" style="width: 48px; height: 48px;">
+                                            {% endif %}
+                                            <div>
+                                                <h6 class="mb-1 {% if spellItem.item.quality == 'rare' %}text-primary fw-bold{% elseif spellItem.item.quality == 'uncommon' %}text-success fw-bold{% endif %}">
+                                                    {{ spellItem.item.name.Fr ?? spellItem.item.name.En ?? spellItem.item.externalId }}
+                                                </h6>
+                                                <small class="text-muted">{{ spellItem.item.category ? spellItem.item.category.name : 'Sans catégorie' }}</small>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            {% if spellItem.item.quality == 'rare' %}
+                                                <span class="badge bg-primary">Rare</span>
+                                            {% elseif spellItem.item.quality == 'uncommon' %}
+                                                <span class="badge bg-success">Uncommon</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Common</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Actions</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{{ path('spell_index') }}" class="btn btn-secondary w-100 mb-2">← Retour à la liste</a>
+                    {% if is_granted('ROLE_ADMIN') %}
+                    <a href="{{ path('admin_spell_show', {'id': spell.id}) }}" class="btn btn-warning w-100">⚙️ Mode Admin</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

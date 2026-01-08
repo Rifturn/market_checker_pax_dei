@@ -1,0 +1,95 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Éditer compétences - {{ avatar.name }} - Pax Dei Market{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>📊 Éditer les compétences de {{ avatar.name }}</h1>
+    <p class="text-muted">Mettez à jour vos niveaux de compétences (0-{{ maxLevel }})</p>
+    
+    <div class="section-divider"></div>
+
+    <form method="post">
+        {# Skills de Combat #}
+        {% set combatSkills = avatar.avatarSkills|filter(s => s.skill.uiGroup == 'combat')|sort((a, b) => a.skill.name <=> b.skill.name) %}
+        {% if combatSkills|length > 0 %}
+        <div class="card mb-4">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">⚔️ Compétences de Combat ({{ combatSkills|length }})</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for avatarSkill in combatSkills %}
+                    <div class="col-md-6 mb-3">
+                        <label for="skill_{{ avatarSkill.skill.id }}" class="form-label">
+                            {{ avatarSkill.skill.name }}
+                        </label>
+                        <div class="input-group">
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="skill_{{ avatarSkill.skill.id }}"
+                                   name="skills[{{ avatarSkill.skill.id }}]" 
+                                   value="{{ avatarSkill.level }}" 
+                                   min="0" 
+                                   max="{{ maxLevel }}"
+                                   step="1">
+                            <span class="input-group-text">/ {{ maxLevel }}</span>
+                        </div>
+                        <div class="progress mt-2" style="height: 5px;">
+                            <div class="progress-bar bg-danger" 
+                                 role="progressbar" 
+                                 style="width: {{ (avatarSkill.level / maxLevel * 100)|round }}%">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Skills de Crafting #}
+        {% set craftingSkills = avatar.avatarSkills|filter(s => s.skill.uiGroup == 'crafting')|sort((a, b) => a.skill.name <=> b.skill.name) %}
+        {% if craftingSkills|length > 0 %}
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">🛠️ Compétences de Crafting ({{ craftingSkills|length }})</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for avatarSkill in craftingSkills %}
+                    <div class="col-md-6 mb-3">
+                        <label for="skill_{{ avatarSkill.skill.id }}" class="form-label">
+                            {{ avatarSkill.skill.name }}
+                        </label>
+                        <div class="input-group">
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="skill_{{ avatarSkill.skill.id }}"
+                                   name="skills[{{ avatarSkill.skill.id }}]" 
+                                   value="{{ avatarSkill.level }}" 
+                                   min="0" 
+                                   max="{{ maxLevel }}"
+                                   step="1">
+                            <span class="input-group-text">/ {{ maxLevel }}</span>
+                        </div>
+                        <div class="progress mt-2" style="height: 5px;">
+                            <div class="progress-bar bg-primary" 
+                                 role="progressbar" 
+                                 style="width: {{ (avatarSkill.level / maxLevel * 100)|round }}%">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-success btn-lg">💾 Enregistrer les compétences</button>
+            <a href="{{ path('avatar_show', {'id': avatar.id}) }}" class="btn btn-secondary">← Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

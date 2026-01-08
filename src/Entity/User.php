@@ -37,9 +37,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: UserView::class, mappedBy: 'user', orphanRemoval: true)]
     private Collection $userViews;
 
+    #[ORM\OneToMany(targetEntity: Avatar::class, mappedBy: 'user', orphanRemoval: true)]
+    private Collection $avatars;
+
     public function __construct()
     {
         $this->userViews = new ArrayCollection();
+        $this->avatars = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -135,6 +139,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         if ($this->userViews->removeElement($userView)) {
             if ($userView->getUser() === $this) {
                 $userView->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Avatar>
+     */
+    public function getAvatars(): Collection
+    {
+        return $this->avatars;
+    }
+
+    public function addAvatar(Avatar $avatar): static
+    {
+        if (!$this->avatars->contains($avatar)) {
+            $this->avatars->add($avatar);
+            $avatar->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAvatar(Avatar $avatar): static
+    {
+        if ($this->avatars->removeElement($avatar)) {
+            if ($avatar->getUser() === $this) {
+                $avatar->setUser(null);
             }
         }
 

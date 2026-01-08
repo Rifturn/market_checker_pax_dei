@@ -1,0 +1,81 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Avatars - Pax Dei Market{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>👤 Avatars de la Communauté</h1>
+    <p class="text-muted">Découvrez les avatars et leurs compétences</p>
+    
+    <div class="section-divider"></div>
+
+    {% if app.user %}
+        {% set userAvatar = null %}
+        {% for avatar in avatars %}
+            {% if avatar.user.id == app.user.id %}
+                {% set userAvatar = avatar %}
+            {% endif %}
+        {% endfor %}
+        
+        <div class="mb-3">
+            {% if userAvatar %}
+                <a href="{{ path('avatar_show', {'id': userAvatar.id}) }}" class="btn btn-primary">👁️ Voir mon avatar</a>
+                <a href="{{ path('avatar_edit', {'id': userAvatar.id}) }}" class="btn btn-warning">✏️ Éditer mon avatar</a>
+            {% else %}
+                <a href="{{ path('avatar_new') }}" class="btn btn-success">➕ Créer mon avatar</a>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <a href="{{ path('app_login') }}">Connectez-vous</a> pour créer votre avatar et suivre vos compétences !
+        </div>
+    {% endif %}
+
+    <div class="row">
+        {% for avatar in avatars %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ avatar.name }}</h5>
+                    <p class="text-muted small mb-3">
+                        <i class="bi bi-person"></i> {{ avatar.user.username }}
+                    </p>
+                    
+                    <div class="mb-3">
+                        <span class="badge bg-info">{{ avatar.avatarSkills|length }} compétences</span>
+                        <span class="badge bg-secondary">{{ avatar.createdAt|date('d/m/Y') }}</span>
+                    </div>
+
+                    {% if avatar.avatarSkills|length > 0 %}
+                    <div class="mb-2">
+                        <strong>Top Skills:</strong>
+                    </div>
+                    {% set topSkills = avatar.avatarSkills|sort((a, b) => b.level <=> a.level)|slice(0, 3) %}
+                    {% for avatarSkill in topSkills %}
+                    <div class="mb-2">
+                        <small class="text-muted">{{ avatarSkill.skill.name }}</small>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-{% if avatarSkill.skill.uiGroup == 'combat' %}danger{% else %}primary{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ (avatarSkill.level / avatarSkill.skill.skillLevelCap * 100)|round }}%">
+                                {{ avatarSkill.level }}/{{ avatarSkill.skill.skillLevelCap }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    
+                    <a href="{{ path('avatar_show', {'id': avatar.id}) }}" class="btn btn-primary btn-sm mt-3">Voir détails</a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                Aucun avatar n'a encore été créé. Soyez le premier !
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

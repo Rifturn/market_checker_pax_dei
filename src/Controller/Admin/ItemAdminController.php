@@ -5,6 +5,7 @@ namespace App\Controller\Admin;
 use App\Entity\ItemEntity;
 use App\Form\ItemEntityType;
 use App\Repository\ItemEntityRepository;
+use App\Repository\SpellItemRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -57,10 +58,14 @@ class ItemAdminController extends AbstractController
     }
 
     #[Route('/{id}', name: 'admin_item_show', methods: ['GET'])]
-    public function show(ItemEntity $item): Response
+    public function show(ItemEntity $item, SpellItemRepository $spellItemRepository): Response
     {
+        // Get linked spells for this item
+        $spellItems = $spellItemRepository->findByItem($item->getId());
+        
         return $this->render('admin/item/show.html.twig', [
             'item' => $item,
+            'spellItems' => $spellItems,
         ]);
     }
 

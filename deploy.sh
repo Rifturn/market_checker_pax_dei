@@ -87,6 +87,7 @@ sudo tee .env.local > /dev/null <<EOF_ENV
 APP_ENV=prod
 APP_SECRET=$APP_SECRET
 DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@127.0.0.1:5432/$DB_NAME?serverVersion=17&charset=utf8"
+SKILL_MAX_LEVEL=40
 EOF_ENV
 
 # Regénérer l'autoloader après avoir créé .env.local
@@ -105,6 +106,12 @@ sudo -u www-data php bin/console doctrine:migrations:migrate --no-interaction
 
 echo "=== Import des items ==="
 sudo -u www-data php bin/console app:import-items
+
+echo "=== Import des spells ==="
+sudo -u www-data php bin/console app:import-spells
+
+echo "=== Import des skills ==="
+sudo -u www-data php bin/console app:import-skills
 
 echo "=== Mise à jour des qualités ==="
 sudo -u www-data php bin/console app:update-item-quality
