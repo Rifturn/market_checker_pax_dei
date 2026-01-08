@@ -260,9 +260,11 @@ class PaxDeiClient
         foreach ($listings as $listing) {
             $itemId = $listing->getItemId();
             $price = $listing->getPrice();
+            $quantity = $listing->getQuantity();
+            $actualPrice = $price / max($quantity, 1); // Prix par unité
             
-            if (!isset($minPrices[$itemId]) || $price < $minPrices[$itemId]) {
-                $minPrices[$itemId] = $price;
+            if (!isset($minPrices[$itemId]) || $actualPrice < $minPrices[$itemId]) {
+                $minPrices[$itemId] = $actualPrice;
             }
         }
         
