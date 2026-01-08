@@ -27,6 +27,7 @@
                             <th>Relique</th>
                             <th>Quantité</th>
                             <th>Débloque</th>
+                            <th>Craftable par</th>
                             <th>Lien</th>
                             <th>Dernière MAJ</th>
                         </tr>
@@ -52,7 +53,7 @@
                                         {% set output = recipes[stock.item.id].output %}
                                         <div class="d-flex align-items-center gap-2">
                                             <img src="{{ output.iconPath }}" alt="{{ output.name['Fr'] ?? output.name['En'] }}" width="24" height="24" loading="lazy">
-                                            <a href="{{ output.url }}" target="_blank" class="text-reset text-decoration-none {% if output.quality == 'rare' %}text-primary{% elseif output.quality == 'uncommon' %}text-success{% endif %}">
+                                            <a href="{{ path('item_show', {'id': output.id}) }}" class="text-reset text-decoration-none {% if output.quality == 'rare' %}text-primary{% elseif output.quality == 'uncommon' %}text-success{% endif %}">
                                                 {{ output.name['Fr'] ?? output.name['En'] ?? output.externalId }}
                                             </a>
                                             {% if recipes[stock.item.id].outputQuantity %}
@@ -61,6 +62,21 @@
                                         </div>
                                     {% else %}
                                         <span class="text-muted fst-italic">Aucune recette</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if craftableByAvatars[stock.item.id] is defined and craftableByAvatars[stock.item.id]|length > 0 %}
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% for capable in craftableByAvatars[stock.item.id] %}
+                                                <a href="{{ path('avatar_show', {'id': capable.avatar.id}) }}" 
+                                                   class="badge bg-success text-decoration-none" 
+                                                   title="{{ capable.avatar.name }} ({{ capable.avatar.user.username }}) - {{ (capable.probability * 100)|number_format(0) }}% de réussite">
+                                                    {{ capable.avatar.name }}
+                                                </a>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted fst-italic">Aucun</span>
                                     {% endif %}
                                 </td>
                                 <td>
