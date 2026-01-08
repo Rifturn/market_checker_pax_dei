@@ -167,7 +167,7 @@ class CheckMarketRelicsCommand extends Command
     private function sendToDiscord(array $newListings, SymfonyStyle $io): void
     {
         // Discord limite les messages à 2000 caractères, on groupe par lots
-        $baseUrl = 'http://137.74.44.207'; // URL de production
+        $baseUrl = 'https://market.lomye.fr'; // URL de production
         $chunks = array_chunk($newListings, 10); // Max 10 annonces par message
         
         foreach ($chunks as $chunk) {
