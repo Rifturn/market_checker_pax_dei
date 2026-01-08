@@ -187,32 +187,42 @@ class PaxDeiClient
 
     public function fetchAllListings(?string $map = null): array
     {
-        $map = $map ?? 'inis_gallia'; // Défaut
-        $regions = self::getRegions($map);
         $allListings = [];
         
-        foreach ($regions as $region) {
-            $url = self::BASE_URL . $map . '/' . $region . '.json';
-            $json = @file_get_contents($url);
+        // Si une map spécifique est demandée, ne traiter que celle-là
+        if ($map !== null) {
+            $mapsToProcess = [$map];
+        } else {
+            // Sinon, traiter toutes les maps
+            $mapsToProcess = array_keys(self::MAPS);
+        }
+        
+        foreach ($mapsToProcess as $currentMap) {
+            $regions = self::getRegions($currentMap);
             
-            if ($json === false) {
-                continue; // Skip si l'URL échoue
-            }
-            
-            $data = json_decode($json, true);
-            if (!is_array($data)) {
-                continue;
-            }
-            
-            foreach ($data as $listingData) {
-                $allListings[] = new Listing(
-                    $listingData['id'] ?? '',
-                    $listingData['item_id'] ?? '',
-                    $listingData['quantity'] ?? 0,
-                    $listingData['price'] ?? 0,
-                    ucfirst($region),
-                    $listingData['last_seen'] ?? 0
-                );
+            foreach ($regions as $region) {
+                $url = self::BASE_URL . $currentMap . '/' . $region . '.json';
+                $json = @file_get_contents($url);
+                
+                if ($json === false) {
+                    continue; // Skip si l'URL échoue
+                }
+                
+                $data = json_decode($json, true);
+                if (!is_array($data)) {
+                    continue;
+                }
+                
+                foreach ($data as $listingData) {
+                    $allListings[] = new Listing(
+                        $listingData['id'] ?? '',
+                        $listingData['item_id'] ?? '',
+                        $listingData['quantity'] ?? 0,
+                        $listingData['price'] ?? 0,
+                        ucfirst($region),
+                        $listingData['last_seen'] ?? 0
+                    );
+                }
             }
         }
         
