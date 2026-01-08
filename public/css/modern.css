@@ -51,6 +51,8 @@ body {
     backdrop-filter: blur(10px);
     box-shadow: var(--shadow-md);
     border-bottom: 1px solid var(--border-color);
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
 .navbar-brand {
@@ -81,8 +83,6 @@ body {
     background: var(--bg-primary);
     border-radius: var(--radius-xl);
     padding: 2rem;
-    margin-top: 2rem;
-    margin-bottom: 2rem;
     box-shadow: var(--shadow-xl);
 }
 
