@@ -15,6 +15,7 @@ class PaxDeiClient
         'ancien' => ['libornes', 'lavedan', 'salias', 'tursan', 'volvestre', 'tolosa', 'armanhac', 'maremna', 'gravas', 'astarac'],
         'inis_gallia' => ['atigny', 'javerdus', 'morvan', 'jura', 'aras', 'langres', 'nones', 'trecassis', 'vitry', 'ardennes'],
         'kerys' => ['tremen', 'llydaw', 'pladenn', 'aven', 'ewyas', 'dreger', 'retz', 'dolavon', 'vanes', 'bronyr'],
+        'lyonesse' => ['brecilien', 'corbin', 'karrek', 'avalon'],
     ];
     
     public static function getMaps(): array

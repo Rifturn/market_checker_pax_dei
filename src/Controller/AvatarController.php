@@ -4,9 +4,12 @@ namespace App\Controller;
 
 use App\Entity\Avatar;
 use App\Entity\AvatarSkill;
+use App\Entity\AvatarTeleport;
 use App\Form\AvatarType;
 use App\Repository\AvatarRepository;
+use App\Repository\AvatarTeleportRepository;
 use App\Repository\SkillRepository;
+use App\Service\PaxDeiClient;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -141,4 +144,160 @@ class AvatarController extends AbstractController
             'avatar' => $avatar,
         ]);
     }
+
+    #[Route('/avatar/{id}/teleports', name: 'avatar_teleports', methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_USER')]
+    public function teleports(Request $request, Avatar $avatar, EntityManagerInterface $entityManager, AvatarTeleportRepository $teleportRepository): Response
+    {
+        // Vérifier que l'utilisateur modifie bien son propre avatar
+        if ($avatar->getUser() !== $this->getUser()) {
+            $this->addFlash('error', 'Vous ne pouvez modifier que votre propre avatar.');
+            return $this->redirectToRoute('avatar_index');
+        }
+
+        // Récupérer tous les maps et zones
+        $allMapsWithRegions = PaxDeiClient::getAllMapsWithRegions();
+        
+        // Récupérer les téléports existants pour cet avatar
+        $existingTeleports = $teleportRepository->findByAvatar($avatar->getId());
+        
+        // Créer un index des téléports existants
+        $teleportsIndex = [];
+        foreach ($existingTeleports as $tp) {
+            $key = $tp->getMap() . '_' . $tp->getZone();
+            $teleportsIndex[$key] = $tp;
+        }
+        
+        // Traitement du formulaire
+        if ($request->isMethod('POST')) {
+            $unlockedTeleports = $request->request->all('teleports') ?? [];
+            
+            // Parcourir tous les maps et zones
+            foreach ($allMapsWithRegions as $map => $zones) {
+                foreach ($zones as $zone) {
+                    $key = $map . '_' . $zone;
+                    $isUnlocked = isset($unlockedTeleports[$key]);
+                    
+                    // Vérifier si le téléport existe déjà
+                    if (isset($teleportsIndex[$key])) {
+                        $teleport = $teleportsIndex[$key];
+                        $teleport->setUnlocked($isUnlocked);
+                    } else {
+                        // Créer un nouveau téléport
+                        $teleport = new AvatarTeleport();
+                        $teleport->setAvatar($avatar);
+                        $teleport->setMap($map);
+                        $teleport->setZone($zone);
+                        $teleport->setUnlocked($isUnlocked);
+                        $entityManager->persist($teleport);
+                        $teleportsIndex[$key] = $teleport;
+                    }
+                }
+            }
+            
+            $entityManager->flush();
+            $this->addFlash('success', 'Téléports mis à jour avec succès !');
+            return $this->redirectToRoute('avatar_teleports', ['id' => $avatar->getId()]);
+        }
+        
+        // Calculer les statistiques
+        $stats = $teleportRepository->getCompletionStats($avatar->getId());
+        
+        // Organiser les données pour l'affichage
+        $teleportsData = [];
+        foreach ($allMapsWithRegions as $map => $zones) {
+            $mapData = [
+                'name' => ucfirst($map),
+                'zones' => [],
+                'unlocked' => 0,
+                'total' => count($zones),
+            ];
+            
+            foreach ($zones as $zone) {
+                $key = $map . '_' . $zone;
+                $isUnlocked = isset($teleportsIndex[$key]) && $teleportsIndex[$key]->isUnlocked();
+                
+                $mapData['zones'][] = [
+                    'name' => ucfirst($zone),
+                    'key' => $key,
+                    'unlocked' => $isUnlocked,
+                ];
+                
+                if ($isUnlocked) {
+                    $mapData['unlocked']++;
+                }
+            }
+            
+            $teleportsData[$map] = $mapData;
+        }
+
+        return $this->render('avatar/teleports.html.twig', [
+            'avatar' => $avatar,
+            'teleportsData' => $teleportsData,
+            'stats' => $stats,
+        ]);
+    }
+
+    #[Route('/avatars/teleports/overview', name: 'avatars_teleports_overview')]
+    public function teleportsOverview(AvatarRepository $avatarRepository, AvatarTeleportRepository $teleportRepository): Response
+    {
+        // Récupérer tous les avatars
+        $avatars = $avatarRepository->findAllWithUser();
+        
+        // Récupérer tous les maps et zones
+        $allMapsWithRegions = PaxDeiClient::getAllMapsWithRegions();
+        
+        // Créer un index des téléports par avatar
+        $avatarTeleportsIndex = [];
+        foreach ($avatars as $avatar) {
+            $teleports = $teleportRepository->findByAvatar($avatar->getId());
+            $avatarTeleportsIndex[$avatar->getId()] = [];
+            
+            foreach ($teleports as $tp) {
+                if ($tp->isUnlocked()) {
+                    $key = $tp->getMap() . '_' . $tp->getZone();
+                    $avatarTeleportsIndex[$avatar->getId()][$key] = true;
+                }
+            }
+        }
+        
+        // Organiser les données par map/zone
+        $mapData = [];
+        foreach ($allMapsWithRegions as $map => $zones) {
+            $mapData[$map] = [
+                'name' => ucfirst($map),
+                'zones' => [],
+            ];
+            
+            foreach ($zones as $zone) {
+                $key = $map . '_' . $zone;
+                
+                // Trouver quels avatars n'ont PAS ce TP
+                $missingAvatars = [];
+                $unlockedCount = 0;
+                
+                foreach ($avatars as $avatar) {
+                    if (isset($avatarTeleportsIndex[$avatar->getId()][$key])) {
+                        $unlockedCount++;
+                    } else {
+                        $missingAvatars[] = $avatar;
+                    }
+                }
+                
+                $mapData[$map]['zones'][] = [
+                    'name' => ucfirst($zone),
+                    'key' => $key,
+                    'missingAvatars' => $missingAvatars,
+                    'unlockedCount' => $unlockedCount,
+                    'totalAvatars' => count($avatars),
+                ];
+            }
+        }
+
+        return $this->render('avatar/teleports_overview.html.twig', [
+            'mapData' => $mapData,
+            'totalAvatars' => count($avatars),
+        ]);
+    }
 }
+

@@ -1,0 +1,165 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Vue d'ensemble des Téléports - Pax Dei Market{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .zone-card {
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+        .zone-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .zone-complete {
+            border-left: 4px solid #28a745;
+        }
+        .zone-incomplete {
+            border-left: 4px solid #ffc107;
+        }
+        .avatar-badge {
+            display: inline-block;
+            padding: 0.35rem 0.65rem;
+            margin: 0.25rem;
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+        }
+        .map-section {
+            margin-bottom: 2rem;
+        }
+        .completion-badge {
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid mt-4">
+    <h1>🗺️ Vue d'ensemble des Téléports par Zone</h1>
+    <p class="text-muted">Visualisez pour chaque zone quels avatars n'ont pas encore débloqué le téléport</p>
+    
+    <div class="section-divider"></div>
+
+    <div class="mb-3">
+        <a href="{{ path('avatar_index') }}" class="btn btn-secondary">← Retour aux avatars</a>
+    </div>
+
+    {% if totalAvatars > 0 %}
+        {# Affichage par map/région #}
+        {% for mapKey, map in mapData %}
+        <div class="map-section">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">🌍 {{ map.name }}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for zone in map.zones %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card zone-card {% if zone.missingAvatars|length == 0 %}zone-complete{% else %}zone-incomplete{% endif %}">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h5 class="mb-0">📍 {{ zone.name }}</h5>
+                                        <span class="badge completion-badge {% if zone.missingAvatars|length == 0 %}bg-success{% else %}bg-warning{% endif %}">
+                                            {{ zone.unlockedCount }}/{{ zone.totalAvatars }}
+                                        </span>
+                                    </div>
+                                    
+                                    {% if zone.missingAvatars|length > 0 %}
+                                        <hr>
+                                        <p class="text-muted mb-2"><small>⚠️ Avatars sans ce TP :</small></p>
+                                        <div>
+                                            {% for avatar in zone.missingAvatars %}
+                                                <span class="avatar-badge" title="{{ avatar.user.username }}">
+                                                    {{ avatar.name }}
+                                                </span>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <hr>
+                                        <p class="text-success mb-0">
+                                            <small>✅ Tous les avatars ont ce téléport !</small>
+                                        </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        {# Statistiques globales #}
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">📊 Statistiques Globales</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="text-primary">{{ totalAvatars }}</h3>
+                                <p class="mb-0">Avatars</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                {% set totalZones = 0 %}
+                                {% for map in mapData %}
+                                    {% set totalZones = totalZones + map.zones|length %}
+                                {% endfor %}
+                                <h3 class="text-info">{{ totalZones }}</h3>
+                                <p class="mb-0">Zones totales</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                {% set completeZones = 0 %}
+                                {% for map in mapData %}
+                                    {% for zone in map.zones %}
+                                        {% if zone.missingAvatars|length == 0 %}
+                                            {% set completeZones = completeZones + 1 %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                                <h3 class="text-success">{{ completeZones }}</h3>
+                                <p class="mb-0">Zones 100% complètes</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                {% set incompletZones = totalZones - completeZones %}
+                                <h3 class="text-warning">{{ incompletZones }}</h3>
+                                <p class="mb-0">Zones incomplètes</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <strong>Aucun avatar trouvé</strong><br>
+            Il n'y a actuellement aucun avatar dans le système.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+{% endblock %}

@@ -1,0 +1,161 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Téléports - {{ avatar.name }} - Pax Dei Market{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .map-section {
+            margin-bottom: 2rem;
+        }
+        .zone-checkbox {
+            padding: 0.5rem;
+            border-radius: var(--radius-md);
+            transition: all 0.2s;
+        }
+        .zone-checkbox:hover {
+            background-color: var(--bg-secondary);
+        }
+        .zone-checkbox.unlocked {
+            background-color: #d4edda;
+        }
+        .progress-custom {
+            height: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        .map-card {
+            border-left: 4px solid var(--primary-color);
+        }
+        .stats-card {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>🗺️ Téléports de {{ avatar.name }}</h1>
+    <p class="text-muted">Cochez les zones dont vous avez débloqué le point de téléportation</p>
+    
+    <div class="section-divider"></div>
+
+    {# Statistiques globales #}
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card stats-card text-white">
+                <div class="card-body">
+                    <h3 class="mb-3">📊 Progression Globale</h3>
+                    <div class="progress progress-custom bg-white">
+                        {% set totalZones = stats.total > 0 ? stats.total : 40 %}
+                        {% set percentage = totalZones > 0 ? (stats.unlocked / totalZones * 100)|round : 0 %}
+                        <div class="progress-bar bg-success" style="width: {{ percentage }}%">
+                            {{ stats.unlocked }} / {{ totalZones }} ({{ percentage }}%)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ path('avatar_show', {'id': avatar.id}) }}" class="btn btn-secondary">
+                            ← Retour au profil
+                        </a>
+                        <a href="{{ path('avatars_teleports_overview') }}" class="btn btn-info">
+                            📋 Vue d'ensemble tous les avatars
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Formulaire de gestion des téléports #}
+    <form method="post">
+        <div class="mb-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                💾 Sauvegarder mes téléports
+            </button>
+        </div>
+
+        {# Affichage par map/région #}
+        {% for mapKey, mapData in teleportsData %}
+        <div class="map-section">
+            <div class="card map-card">
+                <div class="card-header bg-primary text-white">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h4 class="mb-0">🌍 {{ mapData.name }}</h4>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge bg-light text-dark">
+                                {{ mapData.unlocked }} / {{ mapData.total }} zones
+                            </span>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 8px;">
+                        {% set mapPercentage = mapData.total > 0 ? (mapData.unlocked / mapData.total * 100)|round : 0 %}
+                        <div class="progress-bar bg-success" style="width: {{ mapPercentage }}%"></div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for zone in mapData.zones %}
+                        <div class="col-md-4 col-lg-3 mb-3">
+                            <div class="zone-checkbox {% if zone.unlocked %}unlocked{% endif %}">
+                                <div class="form-check">
+                                    <input class="form-check-input" 
+                                           type="checkbox" 
+                                           name="teleports[{{ zone.key }}]" 
+                                           id="tp_{{ zone.key }}"
+                                           {% if zone.unlocked %}checked{% endif %}>
+                                    <label class="form-check-label" for="tp_{{ zone.key }}">
+                                        {% if zone.unlocked %}
+                                            ✅ {{ zone.name }}
+                                        {% else %}
+                                            📍 {{ zone.name }}
+                                        {% endif %}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="mb-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                💾 Sauvegarder mes téléports
+            </button>
+        </div>
+    </form>
+</div>
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        // Ajouter un effet visuel lors du changement de checkbox
+        document.querySelectorAll('.zone-checkbox input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const parent = this.closest('.zone-checkbox');
+                if (this.checked) {
+                    parent.classList.add('unlocked');
+                    const label = parent.querySelector('label');
+                    label.innerHTML = '✅ ' + label.innerHTML.replace(/^(📍|✅)\s*/, '');
+                } else {
+                    parent.classList.remove('unlocked');
+                    const label = parent.querySelector('label');
+                    label.innerHTML = '📍 ' + label.innerHTML.replace(/^(📍|✅)\s*/, '');
+                }
+            });
+        });
+    </script>
+{% endblock %}
+
+{% endblock %}

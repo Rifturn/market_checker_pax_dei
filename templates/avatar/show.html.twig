@@ -80,6 +80,7 @@
                         <a href="{{ path('avatar_index') }}" class="btn btn-secondary">← Tous les avatars</a>
                         {% if app.user and app.user == avatar.user %}
                         <a href="{{ path('avatar_skills', {'id': avatar.id}) }}" class="btn btn-success">📊 Éditer mes compétences</a>
+                        <a href="{{ path('avatar_teleports', {'id': avatar.id}) }}" class="btn btn-info">🗺️ Gérer mes téléports</a>
                         <a href="{{ path('avatar_edit', {'id': avatar.id}) }}" class="btn btn-warning">✏️ Éditer mon avatar</a>
                         {% endif %}
                     </div>
