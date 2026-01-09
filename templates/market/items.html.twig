@@ -19,6 +19,15 @@
         .map-button.active {
             font-weight: bold;
         }
+        .region-col {
+            font-size: 0.85rem;
+            padding: 0.4rem !important;
+            white-space: nowrap;
+            min-width: 70px;
+        }
+        #itemsTable thead th {
+            font-size: 0.9rem;
+        }
     </style>
 {% endblock %}
 
@@ -58,8 +67,9 @@
                         <th>Rareté</th>
                         <th>Catégorie</th>
                         <th class="text-center">Prix min</th>
+                        <th class="text-center">Prix unit. min</th>
                         {% for region in regions %}
-                            <th class="text-center">{{ region }}</th>
+                            <th class="text-center region-col">{{ region }}</th>
                         {% endfor %}
                         <th class="text-center">Total</th>
                     </tr>
@@ -114,13 +124,21 @@
                             </td>
                             <td class="text-center">
                                 {% if minPrices[itemId] is defined %}
-                                    <span class="text-success fw-bold">{{ minPrices[itemId] }}🪙</span>
+                                    <span class="text-success fw-bold">{{ minPrices[itemId].total|number_format(2) }}🪙</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if minPrices[itemId] is defined %}
+                                    <span class="text-info fw-bold">{{ minPrices[itemId].unit|number_format(2) }}🪙</span>
+                                    <small class="text-muted d-block">(x{{ minPrices[itemId].quantity }})</small>
                                 {% else %}
                                     <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
                             {% for region in regions %}
-                                <td class="text-center">
+                                <td class="text-center region-col">
                                     {% if itemCounts[region] is defined and itemCounts[region] > 0 %}
                                         <a href="{{ path('market_item_region_details', {itemId: itemId, region: region, map: currentMap}) }}" class="badge bg-success text-decoration-none">
                                             {{ itemCounts[region] }}

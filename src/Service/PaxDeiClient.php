@@ -261,10 +261,14 @@ class PaxDeiClient
             $itemId = $listing->getItemId();
             $price = $listing->getPrice();
             $quantity = $listing->getQuantity();
-            $actualPrice = $price / max($quantity, 1); // Prix par unité
+            $unitPrice = $price / max($quantity, 1);
             
-            if (!isset($minPrices[$itemId]) || $actualPrice < $minPrices[$itemId]) {
-                $minPrices[$itemId] = $actualPrice;
+            if (!isset($minPrices[$itemId]) || $unitPrice < $minPrices[$itemId]['unit']) {
+                $minPrices[$itemId] = [
+                    'unit' => $unitPrice,      // Prix unitaire
+                    'total' => $price,         // Prix total de l'annonce
+                    'quantity' => $quantity    // Quantité de l'annonce
+                ];
             }
         }
         
