@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Repository\ItemEntityRepository;
+use App\Repository\ItemRecipeRepository;
 use App\Repository\GuildStockRepository;
 use App\Service\PaxDeiClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -13,7 +14,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class MarketController extends AbstractController
 {
     #[Route('/market/{map}', name: 'market_items', defaults: ['map' => 'inis_gallia'])]
-    public function items(string $map, ItemEntityRepository $itemRepository, GuildStockRepository $guildStockRepo, PaxDeiClient $client): Response
+    public function items(string $map, ItemEntityRepository $itemRepository, ItemRecipeRepository $recipeRepository, GuildStockRepository $guildStockRepo, PaxDeiClient $client): Response
     {
         // Vérifier que la map existe
         if (!in_array($map, PaxDeiClient::getMaps())) {
@@ -71,6 +72,21 @@ class MarketController extends AbstractController
         $categories = array_unique($categories);
         sort($categories);
         
+        // Récupérer les recettes pour les reliques
+        $relicRecipes = [];
+        $allRecipes = $recipeRepository->createQueryBuilder('r')
+            ->join('r.ingredient', 'i')
+            ->join('r.output', 'o')
+            ->leftJoin('i.category', 'c')
+            ->where('c.name = :reliques')
+            ->setParameter('reliques', 'Reliques')
+            ->getQuery()
+            ->getResult();
+        
+        foreach ($allRecipes as $recipe) {
+            $relicRecipes[$recipe->getIngredient()->getExternalId()] = $recipe->getOutput();
+        }
+        
         return $this->render('market/items.html.twig', [
             'items' => $dbItems,
             'listingCounts' => $listingCounts,
@@ -81,6 +97,7 @@ class MarketController extends AbstractController
             'stockedItemIds' => $stockedItemIds,
             'minPrices' => $minPrices,
             'lastSeenByItem' => $lastSeenByItem,
+            'relicRecipes' => $relicRecipes,
         ]);
     }
 
@@ -122,7 +139,7 @@ class MarketController extends AbstractController
     }
 
     #[Route('/market/{itemId}/region/{region}/{map}', name: 'market_item_region_details', defaults: ['map' => 'inis_gallia'])]
-    public function itemRegionDetails(string $itemId, string $region, string $map, Request $request, ItemEntityRepository $itemRepository, PaxDeiClient $client): Response
+    public function itemRegionDetails(string $itemId, string $region, string $map, Request $request, ItemEntityRepository $itemRepository, ItemRecipeRepository $recipeRepository, PaxDeiClient $client): Response
     {
         $listings = $client->getListingsByItemAndRegion($itemId, $region, $map);
         
@@ -132,16 +149,33 @@ class MarketController extends AbstractController
         // Récupérer l'URL de retour si elle existe
         $returnUrl = $request->query->get('returnUrl', $this->generateUrl('market_items'));
         
+        // Vérifier si c'est une relique et récupérer le craft associé
+        $relicRecipe = null;
+        if ($item && $item->getCategory() && $item->getCategory()->getName() === 'Reliques') {
+            $recipe = $recipeRepository->createQueryBuilder('r')
+                ->join('r.output', 'o')
+                ->where('r.ingredient = :item')
+                ->setParameter('item', $item)
+                ->setMaxResults(1)
+                ->getQuery()
+                ->getOneOrNullResult();
+            
+            if ($recipe) {
+                $relicRecipe = $recipe->getOutput();
+            }
+        }
+        
         return $this->render('market/item_region_details.html.twig', [
             'listings' => $listings,
             'item' => $item,
             'region' => $region,
-            'returnUrl' => $returnUrl
+            'returnUrl' => $returnUrl,
+            'relicRecipe' => $relicRecipe,
         ]);
     }
 
     #[Route('/market/{itemId}/all-regions/{map}', name: 'market_item_all_regions', defaults: ['map' => 'inis_gallia'])]
-    public function itemAllRegions(string $itemId, string $map, Request $request, ItemEntityRepository $itemRepository, PaxDeiClient $client): Response
+    public function itemAllRegions(string $itemId, string $map, Request $request, ItemEntityRepository $itemRepository, ItemRecipeRepository $recipeRepository, PaxDeiClient $client): Response
     {
         // Trouver l'item correspondant dans la BDD
         $item = $itemRepository->findByExternalId($itemId);
@@ -161,10 +195,27 @@ class MarketController extends AbstractController
         // Récupérer l'URL de retour si elle existe
         $returnUrl = $request->query->get('returnUrl', $this->generateUrl('market_items'));
         
+        // Vérifier si c'est une relique et récupérer le craft associé
+        $relicRecipe = null;
+        if ($item && $item->getCategory() && $item->getCategory()->getName() === 'Reliques') {
+            $recipe = $recipeRepository->createQueryBuilder('r')
+                ->join('r.output', 'o')
+                ->where('r.ingredient = :item')
+                ->setParameter('item', $item)
+                ->setMaxResults(1)
+                ->getQuery()
+                ->getOneOrNullResult();
+            
+            if ($recipe) {
+                $relicRecipe = $recipe->getOutput();
+            }
+        }
+        
         return $this->render('market/item_all_regions.html.twig', [
             'item' => $item,
             'listingsByRegion' => $listingsByRegion,
-            'returnUrl' => $returnUrl
+            'returnUrl' => $returnUrl,
+            'relicRecipe' => $relicRecipe,
         ]);
     }
 }

@@ -21,6 +21,21 @@
             align-items: center;
             gap: 1rem;
         }
+        .craft-badge {
+            background: #e3f2fd;
+            border: 1px solid #007bff;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 0.5rem;
+        }
+        .craft-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+        }
     </style>
 {% endblock %}
 
@@ -39,6 +54,15 @@
                     {{ item.getName()['Fr'] ?? item.getName()['En'] }}
                 </h3>
                 <span class="badge bg-primary">{{ item.getCategory() ? item.getCategory().getName() : 'Aucune catégorie' }}</span>
+                {% if relicRecipe %}
+                    <div class="craft-badge">
+                        <span>🔨 Craft :</span>
+                        <img src="{{ relicRecipe.iconPath }}" class="craft-icon" alt="{{ relicRecipe.getName()['Fr'] ?? relicRecipe.getName()['En'] }}">
+                        <strong class="{% if relicRecipe.quality == 'rare' %}text-primary{% elseif relicRecipe.quality == 'uncommon' %}text-success{% endif %}">
+                            {{ relicRecipe.getName()['Fr'] ?? relicRecipe.getName()['En'] }}
+                        </strong>
+                    </div>
+                {% endif %}
             </div>
         </div>
     {% endif %}

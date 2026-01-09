@@ -28,6 +28,37 @@
         #itemsTable thead th {
             font-size: 0.9rem;
         }
+        .relic-tooltip {
+            position: relative;
+            cursor: pointer;
+        }
+        .relic-craft-info {
+            display: none;
+            position: absolute;
+            z-index: 1000;
+            background: #fff;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            min-width: 200px;
+            top: 100%;
+            left: 0;
+            margin-top: 5px;
+        }
+        .relic-tooltip:hover .relic-craft-info {
+            display: block;
+        }
+        .craft-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .craft-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+        }
     </style>
 {% endblock %}
 
@@ -97,13 +128,25 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{{ item.getUrl() }}" target="_blank" class="text-decoration-none text-reset">
+                                <a href="{{ item.getUrl() }}" target="_blank" class="text-decoration-none text-reset {% if isRelic and relicRecipes[itemId] is defined %}relic-tooltip{% endif %}">
                                     <span class="{% if item.getQuality() == 'rare' %}text-primary fw-bold{% elseif item.getQuality() == 'uncommon' %}text-success fw-bold{% endif %}">
                                         {{ item.getName()['Fr'] ?? item.getName()['En'] ?? item.getExternalId() }}
                                         {% if isMissingRelic %}
                                             <span class="badge bg-danger ms-2">RELIQUE MANQUANTE</span>
                                         {% endif %}
                                     </span>
+                                    {% if isRelic and relicRecipes[itemId] is defined %}
+                                        {% set craftedItem = relicRecipes[itemId] %}
+                                        <div class="relic-craft-info">
+                                            <small class="text-muted d-block mb-2">🔨 Craft :</small>
+                                            <div class="craft-item">
+                                                <img src="{{ craftedItem.iconPath }}" class="craft-icon" alt="{{ craftedItem.getName()['Fr'] ?? craftedItem.getName()['En'] }}">
+                                                <strong class="{% if craftedItem.quality == 'rare' %}text-primary{% elseif craftedItem.quality == 'uncommon' %}text-success{% endif %}">
+                                                    {{ craftedItem.getName()['Fr'] ?? craftedItem.getName()['En'] ?? craftedItem.externalId }}
+                                                </strong>
+                                            </div>
+                                        </div>
+                                    {% endif %}
                                 </a>
                             </td>
                             <td data-order="{% if item.getQuality() == 'rare' %}1{% elseif item.getQuality() == 'uncommon' %}2{% else %}3{% endif %}">
