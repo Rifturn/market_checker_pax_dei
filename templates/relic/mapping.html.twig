@@ -1,0 +1,164 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mapping Reliques → Équipements - Pax Dei Market{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <style>
+        .item-icon {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            border-radius: var(--radius-md);
+        }
+        .mapping-row {
+            transition: all 0.2s;
+        }
+        .mapping-row:hover {
+            transform: scale(1.01);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .arrow-icon {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>🔮 Mapping Reliques → Équipements</h1>
+    <p class="text-muted">Découvrez quel équipement est crafté avec chaque relique</p>
+    
+    <div class="section-divider"></div>
+
+    {# Stats rapides #}
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ totalRecipes }}</h3>
+                    <p class="mb-0">Recettes trouvées</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Tableau des mappings #}
+    <div class="card">
+        <div class="card-body">
+            {% if recipes|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" id="mappingTable">
+                    <thead>
+                        <tr>
+                            <th colspan="2">Relique (Ingrédient)</th>
+                            <th style="width: 80px; text-align: center;">→</th>
+                            <th colspan="2">Équipement Crafté</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for recipe in recipes %}
+                        <tr class="mapping-row">
+                            {# Relique #}
+                            <td style="width: 60px;">
+                                {% if recipe.relic.iconPath %}
+                                <img src="{{ recipe.relic.iconPath }}" 
+                                     alt="{{ recipe.relicName }}" 
+                                     class="item-icon">
+                                {% else %}
+                                <div class="item-icon bg-secondary d-flex align-items-center justify-content-center">
+                                    <span class="text-white">?</span>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong class="{% if recipe.relic.quality == 'rare' %}text-primary{% elseif recipe.relic.quality == 'uncommon' %}text-success{% endif %}">
+                                    {{ recipe.relicName }}
+                                </strong>
+                            </td>
+                            
+                            {# Flèche #}
+                            <td class="text-center">
+                                <span class="arrow-icon">→</span>
+                            </td>
+                            
+                            {# Équipement #}
+                            <td style="width: 60px;">
+                                {% if recipe.equipment.iconPath %}
+                                <img src="{{ recipe.equipment.iconPath }}" 
+                                     alt="{{ recipe.equipmentName }}" 
+                                     class="item-icon">
+                                {% else %}
+                                <div class="item-icon bg-secondary d-flex align-items-center justify-content-center">
+                                    <span class="text-white">?</span>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong class="{% if recipe.equipment.quality == 'rare' %}text-primary{% elseif recipe.equipment.quality == 'uncommon' %}text-success{% endif %}">
+                                    {{ recipe.equipmentName }}
+                                </strong>
+                                {% if recipe.equipment.category %}
+                                    <br>
+                                    <span class="badge bg-info">{{ recipe.equipment.category.name }}</span>
+                                {% endif %}
+                            </td>
+                            
+                            {# Actions #}
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ path('item_show', {'id': recipe.relic.id}) }}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       title="Voir la relique">
+                                        🔮
+                                    </a>
+                                    <a href="{{ path('item_show', {'id': recipe.equipment.id}) }}" 
+                                       class="btn btn-sm btn-outline-success" 
+                                       title="Voir l'équipement">
+                                        ⚔️
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                <strong>Aucun mapping trouvé</strong><br>
+                Aucune relation entre reliques et équipements n'a été trouvée.
+                <br><br>
+                Utilisez la commande <code>php bin/console app:analyze-relic-recipes</code> pour générer les mappings.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#mappingTable').DataTable({
+                order: [[1, 'asc']], // Trier par nom de relique
+                pageLength: 25,
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json',
+                    search: "Rechercher une relique ou équipement :",
+                    searchPlaceholder: "Nom, ID..."
+                },
+                columnDefs: [
+                    { orderable: false, targets: [0, 2, 3, 6] } // Désactiver le tri sur les icônes et actions
+                ]
+            });
+        });
+    </script>
+{% endblock %}
