@@ -74,10 +74,10 @@
                                         <td><span class="badge bg-info">{{ listing.quantity }}</span></td>
                                         <td><strong>{{ listing.price }}</strong> 🪙</td>
                                         <td>{{ (listing.price / listing.quantity)|number_format(2) }} 🪙</td>
-                                        <td data-order="{{ listing.last_seen }}">
-                                            {% set lastSeenDate = listing.last_seen|date('Y-m-d H:i') %}
+                                        <td data-order="{{ listing.lastSeen }}">
+                                            {% set lastSeenDate = listing.lastSeen|date('Y-m-d H:i') %}
                                             {% set now = 'now'|date('U') %}
-                                            {% set diff = now - listing.last_seen %}
+                                            {% set diff = now - listing.lastSeen %}
                                             {% if diff < 3600 %}
                                                 <span class="badge bg-success" title="{{ lastSeenDate }}">{{ (diff / 60)|round }} min</span>
                                             {% elseif diff < 86400 %}
