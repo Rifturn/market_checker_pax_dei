@@ -42,4 +42,30 @@ class ItemRecipeRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Trouve tous les ingrédients nécessaires pour un output donné
+     * @return ItemRecipe[]
+     */
+    public function findIngredientsByOutput(ItemEntity $output): array
+    {
+        return $this->createQueryBuilder('r')
+            ->where('r.output = :output')
+            ->setParameter('output', $output)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Trouve tous les ingrédients nécessaires pour plusieurs outputs
+     * @return ItemRecipe[]
+     */
+    public function findIngredientsByOutputs(array $outputs): array
+    {
+        return $this->createQueryBuilder('r')
+            ->where('r.output IN (:outputs)')
+            ->setParameter('outputs', $outputs)
+            ->getQuery()
+            ->getResult();
+    }
 }

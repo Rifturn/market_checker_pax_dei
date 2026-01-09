@@ -34,6 +34,18 @@ class ItemEntity
     #[ORM\JoinColumn(nullable: true)]
     private ?Category $category = null;
 
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $type = null;
+
+    #[ORM\Column(length: 500, nullable: true)]
+    private ?string $urlApi = null;
+
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $armorCategory = null;
+
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $slotCategory = null;
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $createdAt = null;
 
@@ -117,6 +129,50 @@ class ItemEntity
         return $this;
     }
 
+    public function getType(): ?string
+    {
+        return $this->type;
+    }
+
+    public function setType(?string $type): static
+    {
+        $this->type = $type;
+        return $this;
+    }
+
+    public function getUrlApi(): ?string
+    {
+        return $this->urlApi;
+    }
+
+    public function setUrlApi(?string $urlApi): static
+    {
+        $this->urlApi = $urlApi;
+        return $this;
+    }
+
+    public function getArmorCategory(): ?string
+    {
+        return $this->armorCategory;
+    }
+
+    public function setArmorCategory(?string $armorCategory): static
+    {
+        $this->armorCategory = $armorCategory;
+        return $this;
+    }
+
+    public function getSlotCategory(): ?string
+    {
+        return $this->slotCategory;
+    }
+
+    public function setSlotCategory(?string $slotCategory): static
+    {
+        $this->slotCategory = $slotCategory;
+        return $this;
+    }
+
     public function getCreatedAt(): ?\DateTimeInterface
     {
         return $this->createdAt;
@@ -137,5 +193,27 @@ class ItemEntity
     {
         $this->updatedAt = $updatedAt;
         return $this;
+    }
+
+    /**
+     * Retourne le type d'armure pour les wearables: L (léger), M (medium), P (plaque)
+     */
+    public function getArmorType(): ?string
+    {
+        if (!$this->armorCategory) {
+            return null;
+        }
+
+        if (str_contains($this->armorCategory, 'Cloth')) {
+            return 'L'; // Léger
+        }
+        if (str_contains($this->armorCategory, 'Leather')) {
+            return 'M'; // Medium
+        }
+        if (str_contains($this->armorCategory, 'Plate') || str_contains($this->armorCategory, 'Mail')) {
+            return 'P'; // Plaque
+        }
+
+        return null;
     }
 }

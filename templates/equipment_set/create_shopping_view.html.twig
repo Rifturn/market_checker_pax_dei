@@ -1,0 +1,289 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Créer une vue d'achat - {{ set.name }} - Pax Dei{% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+    <div class="mb-4">
+        <a href="{{ path('equipment_set_show', {id: set.id}) }}" class="btn btn-outline-secondary">
+            ← Retour au set
+        </a>
+    </div>
+
+    <h1 class="mb-4">🛒 Créer une vue d'achat pour : {{ set.name }}</h1>
+    
+    {% if itemsData is empty %}
+        <div class="alert alert-warning">
+            <h5>⚠️ Aucun item dans ce set</h5>
+            <p>Ce set ne contient aucun équipement.</p>
+        </div>
+    {% else %}
+        <p class="text-muted mb-4">
+            Sélectionnez les items et ingrédients que vous souhaitez surveiller sur le marché. 
+            Par défaut, tous sont cochés. Vous pouvez décocher ceux que vous ne souhaitez pas suivre 
+            (généralement les ressources communes ou les items que vous possédez déjà).
+        </p>
+
+        <form method="POST" action="{{ path('equipment_set_save_shopping_view', {id: set.id}) }}" id="shoppingViewForm">
+            <div class="row">
+                <!-- Liste des items et ingrédients -->
+                <div class="col-md-8">
+                    {% for data in itemsData %}
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        {% if data.item.iconPath %}
+                                            <img src="{{ data.item.iconPath }}" alt="" class="me-2" style="width: 32px; height: 32px;">
+                                        {% endif %}
+                                        <div>
+                                            <h5 class="mb-0">{{ data.itemName }}</h5>
+                                            <small>{{ data.slot }}</small>
+                                        </div>
+                                    </div>
+                                    {% if not data.hasRecipe %}
+                                        <span class="badge bg-warning">Sans recette</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                {% if data.hasRecipe and data.ingredients is not empty %}
+                                    <!-- Item a une recette, on affiche les ingrédients -->
+                                    <h6 class="text-muted mb-3">📦 Ingrédients de craft :</h6>
+                                    <div class="row">
+                                        {% for ingredientData in data.ingredients %}
+                                            <div class="col-md-6 mb-3">
+                                                <div class="form-check ingredient-item p-3 border rounded {% if ingredientData.item is null %}bg-warning bg-opacity-10{% endif %}">
+                                                    {% if ingredientData.item %}
+                                                        {% set ingredient = ingredientData.item %}
+                                                        {% set uniqueId = 'item-' ~ data.item.id ~ '-' ~ ingredient.id %}
+                                                        <input class="form-check-input ingredient-checkbox" 
+                                                               type="checkbox" 
+                                                               name="items[]" 
+                                                               value="{{ ingredient.id }}"
+                                                               id="{{ uniqueId }}"
+                                                               data-quality="{{ ingredient.quality ?? 'common' }}">
+                                                        <label class="form-check-label w-100" for="{{ uniqueId }}">
+                                                            <div class="d-flex align-items-center">
+                                                                {% if ingredient.iconPath %}
+                                                                    <img src="{{ ingredient.iconPath }}" alt="" class="me-2" style="width: 40px; height: 40px;">
+                                                                {% endif %}
+                                                                <div class="flex-grow-1">
+                                                                    <div class="fw-bold">{{ ingredient.name.Fr ?? ingredient.externalId }}</div>
+                                                                    <small class="text-muted">
+                                                                        Quantité: {{ ingredientData.quantity }}
+                                                                        {% if ingredient.quality %}
+                                                                            | <span class="quality-badge">{{ ingredient.quality|upper }}</span>
+                                                                        {% endif %}
+                                                                    </small>
+                                                                </div>
+                                                            </div>
+                                                        </label>
+                                                    {% else %}
+                                                        {# Item non trouvé en DB #}
+                                                        <div class="d-flex align-items-center opacity-75">
+                                                            <div class="me-2" style="width: 40px; height: 40px; background: #ddd; border-radius: 4px;"></div>
+                                                            <div class="flex-grow-1">
+                                                                <div class="fw-bold">{{ ingredientData.name }}</div>
+                                                                <small class="text-muted">
+                                                                    Quantité: {{ ingredientData.quantity }}
+                                                                    | <span class="badge bg-warning">Non en base</span>
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <!-- Item sans recette, on l'affiche directement -->
+                                    <h6 class="text-muted mb-3">🎯 Item à surveiller directement :</h6>
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <div class="form-check ingredient-item p-3 border rounded bg-light">
+                                                {% set uniqueId = 'item-direct-' ~ data.item.id %}
+                                                <input class="form-check-input ingredient-checkbox" 
+                                                       type="checkbox" 
+                                                       name="items[]" 
+                                                       value="{{ data.item.id }}"
+                                                       id="{{ uniqueId }}"
+                                                       data-quality="{{ data.item.quality ?? 'common' }}">
+                                                <label class="form-check-label w-100" for="{{ uniqueId }}">
+                                                    <div class="d-flex align-items-center">
+                                                        {% if data.item.iconPath %}
+                                                            <img src="{{ data.item.iconPath }}" alt="" class="me-2" style="width: 48px; height: 48px;">
+                                                        {% endif %}
+                                                        <div class="flex-grow-1">
+                                                            <div class="fw-bold fs-5">{{ data.itemName }}</div>
+                                                            <small class="text-muted">
+                                                                {% if data.item.quality %}
+                                                                    <span class="quality-badge">{{ data.item.quality|upper }}</span> | 
+                                                                {% endif %}
+                                                                Type: Item final
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted small mb-0">
+                                        <i class="bi bi-info-circle"></i> Cet item n'a pas de recette connue. Il sera surveillé directement sur le marché.
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Sidebar : Actions et résumé -->
+                <div class="col-md-4">
+                    <div class="card sticky-top" style="top: 20px;">
+                        <div class="card-header">
+                            <h5 class="mb-0">📋 Résumé</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <strong>Items du set:</strong> {{ itemsData|length }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Items sélectionnés:</strong>
+                                <span class="badge bg-primary" id="selectedCount">0</span>
+                            </div>
+                            
+                            <hr>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-outline-primary" id="selectAllBtn">
+                                    ✅ Tout sélectionner
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="deselectAllBtn">
+                                    ❌ Tout désélectionner
+                                </button>
+                                <button type="button" class="btn btn-outline-info" id="selectRareOnlyBtn">
+                                    ⭐ Rares uniquement
+                                </button>
+                            </div>
+                            
+                            <hr>
+                            
+                            <div class="mb-3">
+                                <label for="viewName" class="form-label">Nom de la vue</label>
+                                <input type="text" class="form-control" id="viewName" name="viewName" 
+                                       value="Craft - {{ set.name }}" required>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    💾 Créer la vue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    {% endif %}
+</div>
+
+<style>
+.ingredient-item {
+    transition: all 0.2s;
+    background: #f8f9fa;
+}
+
+.ingredient-item:hover {
+    background: #e9ecef;
+}
+
+.ingredient-item:has(.form-check-input:checked) {
+    background: #d1e7dd;
+    border-color: #198754 !important;
+}
+
+.form-check-input {
+    width: 1.5em;
+    height: 1.5em;
+    margin-top: 0;
+}
+
+.form-check-label {
+    cursor: pointer;
+}
+
+.quality-badge {
+    font-weight: 600;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.ingredient-checkbox');
+    const selectedCount = document.getElementById('selectedCount');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const deselectAllBtn = document.getElementById('deselectAllBtn');
+    const selectRareOnlyBtn = document.getElementById('selectRareOnlyBtn');
+    
+    // Fonction pour mettre à jour le compteur
+    function updateCount() {
+        const count = document.querySelectorAll('.ingredient-checkbox:checked').length;
+        selectedCount.textContent = count;
+    }
+    
+    // Initialiser le compteur
+    updateCount();
+    
+    // Écouter les changements sur les checkboxes
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateCount);
+    });
+    
+    // Tout sélectionner
+    selectAllBtn.addEventListener('click', function() {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateCount();
+    });
+    
+    // Tout désélectionner
+    deselectAllBtn.addEventListener('click', function() {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateCount();
+    });
+    
+    // Sélectionner uniquement les rares
+    selectRareOnlyBtn.addEventListener('click', function() {
+        checkboxes.forEach(checkbox => {
+            const quality = checkbox.dataset.quality || '';
+            
+            // Décocher tout d'abord
+            checkbox.checked = false;
+            
+            // Cocher uniquement si rare ou uncommon
+            if (quality === 'rare' || quality === 'uncommon') {
+                checkbox.checked = true;
+            }
+        });
+        updateCount();
+    });
+    
+    // Validation à la soumission du formulaire
+    const form = document.getElementById('shoppingViewForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const checkedCount = document.querySelectorAll('.ingredient-checkbox:checked').length;
+            
+            if (checkedCount === 0) {
+                e.preventDefault();
+                alert('⚠️ Veuillez sélectionner au moins un item !');
+                return false;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

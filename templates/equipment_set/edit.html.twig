@@ -1,0 +1,703 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier {{ set.name }} - Pax Dei{% endblock %}
+
+{% block body %}
+<div class="container-fluid mt-4">
+    <div class="mb-4">
+        <a href="{{ path('equipment_set_show', {id: set.id}) }}" class="btn btn-outline-secondary">
+            ← Retour au set
+        </a>
+    </div>
+
+    <h1 class="mb-4">✏️ Modifier le set d'équipement</h1>
+
+    <form method="POST" id="equipmentSetForm">
+        <div class="row">
+            <!-- Colonne gauche: Configuration et aperçu -->
+            <div class="col-md-3">
+                <div class="card sticky-top" style="top: 20px;">
+                    <div class="card-header">
+                        <h5 class="mb-0">📝 Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nom du set</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ set.name }}" required>
+                        </div>
+                        
+                        <hr>
+                        
+                        <h6 class="mb-3">👤 Sélectionner un slot</h6>
+                        <div class="character-preview">
+                            {% set slotMapping = {
+                                'Category.Armor.Slot.Head': {'id': 'helmet', 'label': '🪖 Casque'},
+                                'Category.Armor.Slot.Chest': {'id': 'chest', 'label': '🎽 Torse'},
+                                'Category.Armor.Slot.Hands': {'id': 'gloves', 'label': '🧤 Gants'},
+                                'Category.Armor.Slot.Arms': {'id': 'bracers', 'label': '🛡️ Brassards'},
+                                'Category.Armor.Slot.Legs': {'id': 'legs', 'label': '👖 Jambes'},
+                                'Category.Armor.Slot.Feet': {'id': 'boots', 'label': '👢 Bottes'},
+                            } %}
+                            
+                            {% for slotCat, slotInfo in slotMapping %}
+                                {% set currentItem = attribute(set, slotInfo.id) %}
+                                <div class="equipment-slot-preview mb-2 slot-selector" 
+                                     data-slot="{{ slotInfo.id }}"
+                                     data-slot-category="{{ slotCat }}">
+                                    <small class="text-muted d-block">{{ slotInfo.label }}</small>
+                                    <div class="selected-item" id="preview-{{ slotInfo.id }}">
+                                        {% if currentItem %}
+                                            {% if currentItem.iconPath %}
+                                                <img src="{{ currentItem.iconPath }}" alt="">
+                                            {% endif %}
+                                            <span class="small">{{ currentItem.name.Fr ?? currentItem.externalId }}</span>
+                                        {% else %}
+                                            <span class="text-muted small">Aucun</span>
+                                        {% endif %}
+                                    </div>
+                                    <input type="hidden" name="{{ slotInfo.id }}" id="input-{{ slotInfo.id }}" value="{{ currentItem ? currentItem.id : '' }}">
+                                </div>
+                            {% endfor %}
+                            
+                            <hr>
+                            
+                            {% set currentMainHand = set.mainHand %}
+                            <div class="equipment-slot-preview mb-2 slot-selector" data-slot="mainHand">
+                                <small class="text-muted d-block">⚔️ Main principale</small>
+                                <div class="selected-item" id="preview-mainHand">
+                                    {% if currentMainHand %}
+                                        {% if currentMainHand.iconPath %}
+                                            <img src="{{ currentMainHand.iconPath }}" alt="">
+                                        {% endif %}
+                                        <span class="small">{{ currentMainHand.name.Fr ?? currentMainHand.externalId }}</span>
+                                    {% else %}
+                                        <span class="text-muted small">Aucun</span>
+                                    {% endif %}
+                                </div>
+                                <input type="hidden" name="mainHand" id="input-mainHand" value="{{ currentMainHand ? currentMainHand.id : '' }}">
+                            </div>
+                            
+                            {% set currentOffHand = set.offHand %}
+                            <div class="equipment-slot-preview mb-2 slot-selector" data-slot="offHand">
+                                <small class="text-muted d-block">🛡️ Main secondaire</small>
+                                <div class="selected-item" id="preview-offHand">
+                                    {% if currentOffHand %}
+                                        {% if currentOffHand.iconPath %}
+                                            <img src="{{ currentOffHand.iconPath }}" alt="">
+                                        {% endif %}
+                                        <span class="small">{{ currentOffHand.name.Fr ?? currentOffHand.externalId }}</span>
+                                    {% else %}
+                                        <span class="text-muted small">Aucun</span>
+                                    {% endif %}
+                                </div>
+                                <input type="hidden" name="offHand" id="input-offHand" value="{{ currentOffHand ? currentOffHand.id : '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">💾 Enregistrer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colonne droite: Sélection des items -->
+            <div class="col-md-9">
+                <!-- Message par défaut -->
+                <div class="card mb-4" id="default-message">
+                    <div class="card-header">
+                        <h5 class="mb-0">👈 Sélectionnez un slot à gauche</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted text-center py-5">Cliquez sur un slot à gauche pour afficher les items disponibles.</p>
+                    </div>
+                </div>
+
+                <!-- Grids pour chaque slot -->
+                {% for slotCat, slotInfo in slotMapping %}
+                    {% if wearablesBySlot[slotCat] is defined %}
+                        <div class="card mb-4 slot-grid-section" data-slot-section="{{ slotInfo.id }}" style="display: none;">
+                            <div class="card-header">
+                                <h5 class="mb-0">{{ slotInfo.label }}</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <input type="text" class="form-control form-control-sm search-input" 
+                                           placeholder="🔍 Rechercher..." 
+                                           data-slot="{{ slotInfo.id }}" 
+                                           style="max-width: 200px;">
+                                </div>
+                                <div class="d-flex gap-2 mb-3 flex-wrap">
+                                    <div class="btn-group btn-group-sm armor-filter" role="group">
+                                        <button type="button" class="btn btn-outline-secondary active" data-filter="all" data-slot="{{ slotInfo.id }}">Tout</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-filter="Cloth" data-slot="{{ slotInfo.id }}">Tissus</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-filter="Leather" data-slot="{{ slotInfo.id }}">Cuir</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-filter="Plate" data-slot="{{ slotInfo.id }}">Plaque</button>
+                                    </div>
+                                    <div class="btn-group btn-group-sm quality-filter" role="group">
+                                        <button type="button" class="btn btn-outline-secondary active" data-quality="all" data-slot="{{ slotInfo.id }}">Toutes</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-quality="common" data-slot="{{ slotInfo.id }}">Commun</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-quality="uncommon" data-slot="{{ slotInfo.id }}">Peu commun</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-quality="rare" data-slot="{{ slotInfo.id }}">Rare</button>
+                                    </div>
+                                    <div>
+                                        <select class="form-select form-select-sm spell-type-filter" data-slot="{{ slotInfo.id }}" style="min-width: 150px;">
+                                            <option value="all">✨ Tous les sorts</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="items-grid-container" data-slot="{{ slotInfo.id }}">
+                                    <div class="row g-2" data-slot-items="{{ slotInfo.id }}">
+                                    {% for item in wearablesBySlot[slotCat] %}
+                                        {% set itemData = itemsWithSpells[item.id] %}
+                                        {% set spellNames = [] %}
+                                        {% if itemData.spells|length > 0 %}
+                                            {% for spellItem in itemData.spells %}
+                                                {% set spellNames = spellNames|merge([spellItem.spell.name ?? spellItem.spell.externalId]) %}
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% set currentSlotItem = attribute(set, slotInfo.id) %}
+                                        {% set isSelected = currentSlotItem and currentSlotItem.id == item.id %}
+                                        <div class="col-md-3 col-sm-4 col-6 item-wrapper" 
+                                             data-armor-type="{{ item.armorCategory|replace({'Category.Armor.': ''}) }}"
+                                             data-quality="{{ item.quality }}"
+                                             data-item-name="{{ (item.name.Fr ?? item.externalId)|lower }}"
+                                             data-spell-names="{{ spellNames|join('|')|lower }}">
+                                            <div class="item-card {% if isSelected %}selected{% endif %}" 
+                                                 data-item-id="{{ item.id }}"
+                                                 data-slot="{{ slotInfo.id }}"
+                                                 data-quality="{{ item.quality }}">
+                                                <div class="item-card-header quality-{{ item.quality }}">
+                                                    <div class="d-flex align-items-center">
+                                                        {% if item.iconPath %}
+                                                            <img src="{{ item.iconPath }}" alt="" class="item-icon">
+                                                        {% endif %}
+                                                        <div class="flex-grow-1 ms-2">
+                                                            <div class="item-name">
+                                                                {{ item.name.Fr ?? item.externalId }}
+                                                            </div>
+                                                            <div class="item-info">
+                                                                <span class="badge bg-secondary">{{ item.quality|upper }}</span>
+                                                                {% if item.armorType %}
+                                                                    <span class="badge bg-info">[{{ item.armorType }}]</span>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% if itemData.spells|length > 0 %}
+                                                    <div class="item-card-body">
+                                                        <small class="text-muted d-block mb-1">✨ Sorts:</small>
+                                                        {% for spellItem in itemData.spells %}
+                                                            {% set spell = spellItem.spell %}
+                                                            <div class="spell-info">
+                                                                {% if spell.iconPath %}
+                                                                    <img src="{{ spell.iconPath|spell_icon_url }}" alt="" class="spell-icon-small" style="background-color: #1e3a5f; padding: 2px; border-radius: 3px;">
+                                                                {% endif %}
+                                                                <span class="spell-name-small">{{ spell.name ?? spell.externalId }}</span>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Grids pour les armes -->
+                {% set weaponSlots = {
+                    'mainHand': '⚔️ Main principale',
+                    'offHand': '🛡️ Main secondaire'
+                } %}
+                
+                {% for slot, label in weaponSlots %}
+                    <div class="card mb-4 slot-grid-section" data-slot-section="{{ slot }}" style="display: none;">
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ label }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <input type="text" class="form-control form-control-sm search-input" 
+                                       placeholder="🔍 Rechercher..." 
+                                       data-slot="{{ slot }}" 
+                                       style="max-width: 200px;">
+                            </div>
+                            <div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
+                            <div class="btn-group btn-group-sm quality-filter" role="group">
+                                <button type="button" class="btn btn-outline-secondary active" data-quality="all" data-slot="{{ slot }}">Toutes</button>
+                                <button type="button" class="btn btn-outline-secondary" data-quality="common" data-slot="{{ slot }}">Commun</button>
+                                <button type="button" class="btn btn-outline-secondary" data-quality="uncommon" data-slot="{{ slot }}">Peu commun</button>
+                                <button type="button" class="btn btn-outline-secondary" data-quality="rare" data-slot="{{ slot }}">Rare</button>
+                            </div>
+                            <div>
+                                <select class="form-select form-select-sm spell-type-filter" data-slot="{{ slot }}" style="min-width: 150px;">
+                                    <option value="all">✨ Tous les sorts</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="items-grid-container" data-slot="{{ slot }}">
+                            <div class="row g-2" data-slot-items="{{ slot }}">
+                                {% for item in wieldables %}
+                                    {% set itemData = itemsWithSpells[item.id] %}
+                                    {% set spellNames = [] %}
+                                    {% if itemData.spells|length > 0 %}
+                                        {% for spellItem in itemData.spells %}
+                                            {% set spellNames = spellNames|merge([spellItem.spell.name ?? spellItem.spell.externalId]) %}
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% set currentSlotItem = attribute(set, slot) %}
+                                    {% set isSelected = currentSlotItem and currentSlotItem.id == item.id %}
+                                    <div class="col-md-3 col-sm-4 col-6 item-wrapper"
+                                         data-quality="{{ item.quality }}"
+                                         data-item-name="{{ (item.name.Fr ?? item.externalId)|lower }}"
+                                         data-spell-names="{{ spellNames|join('|')|lower }}">
+                                        <div class="item-card {% if isSelected %}selected{% endif %}" 
+                                             data-item-id="{{ item.id }}"
+                                             data-slot="{{ slot }}"
+                                             data-quality="{{ item.quality }}">
+                                            <div class="item-card-header quality-{{ item.quality }}">
+                                                <div class="d-flex align-items-center">
+                                                    {% if item.iconPath %}
+                                                        <img src="{{ item.iconPath }}" alt="" class="item-icon">
+                                                    {% endif %}
+                                                    <div class="flex-grow-1 ms-2">
+                                                        <div class="item-name">
+                                                            {{ item.name.Fr ?? item.externalId }}
+                                                        </div>
+                                                        <div class="item-info">
+                                                            <span class="badge bg-secondary">{{ item.quality|upper }}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% if itemData.spells|length > 0 %}
+                                                <div class="item-card-body">
+                                                    <small class="text-muted d-block mb-1">✨ Sorts:</small>
+                                                    {% for spellItem in itemData.spells %}
+                                                        {% set spell = spellItem.spell %}
+                                                        <div class="spell-info">
+                                                            {% if spell.iconPath %}
+                                                                <img src="{{ spell.iconPath|spell_icon_url }}" alt="" class="spell-icon-small" style="background-color: #1e3a5f; padding: 2px; border-radius: 3px;">
+                                                            {% endif %}
+                                                            <span class="spell-name-small">{{ spell.name ?? spell.externalId }}</span>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>                    </div>                {% endfor %}
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+.items-grid-container {
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 10px;
+}
+
+.items-grid-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.items-grid-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.items-grid-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.items-grid-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.item-wrapper {
+    transition: all 0.3s;
+}
+
+.item-wrapper.hidden {
+    display: none;
+}
+
+.item-card {
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+    height: 100%;
+}
+
+.item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-color: #0d6efd;
+}
+
+.item-card.selected {
+    border-color: #198754;
+    background: #d1e7dd;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.25);
+}
+
+.item-card-header {
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.item-card-body {
+    padding: 10px;
+    background: #f8f9fa;
+    font-size: 0.85rem;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.item-icon {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.item-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+
+.item-info {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.item-info .badge {
+    font-size: 0.7rem;
+}
+
+.spell-info {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.spell-icon-small {
+    width: 20px;
+    height: 20px;
+}
+
+.spell-name-small {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.quality-rare { border-color: #0d6efd !important; background: #cfe2ff; }
+.quality-uncommon { border-color: #198754 !important; background: #d1e7dd; }
+.quality-common { border-color: #6c757d !important; background: #e2e3e5; }
+
+.character-preview {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 6px;
+}
+
+.equipment-slot-preview {
+    padding: 8px;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.equipment-slot-preview:hover {
+    background: #f0f0f0;
+    border-color: #0d6efd;
+}
+
+.equipment-slot-preview.active {
+    border: 3px solid #0d6efd;
+    background: #e7f1ff;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+}
+
+.selected-item {
+    font-size: 0.85rem;
+    min-height: 24px;
+}
+
+.selected-item img {
+    width: 20px;
+    height: 20px;
+    margin-right: 4px;
+}
+
+.armor-filter .btn {
+    font-size: 0.8rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const slotSelectors = document.querySelectorAll('.slot-selector');
+    const itemCards = document.querySelectorAll('.item-card');
+    let currentActiveSlot = null;
+    
+    // Mapping des titres de slots
+    const slotTitles = {
+        'helmet': '🪖 Casque',
+        'chest': '🎽 Torse',
+        'gloves': '🧤 Gants',
+        'bracers': '🛡️ Brassards',
+        'legs': '👖 Jambes',
+        'boots': '👢 Bottes',
+        'mainHand': '⚔️ Main principale',
+        'offHand': '🛡️ Main secondaire'
+    };
+    
+    // Fonction pour afficher le grid d'un slot
+    function showSlotGrid(slotId) {
+        // Masquer le message par défaut
+        const defaultMessage = document.getElementById('default-message');
+        if (defaultMessage) {
+            defaultMessage.style.display = 'none';
+        }
+        
+        // Masquer tous les grids
+        document.querySelectorAll('.slot-grid-section').forEach(section => {
+            section.style.display = 'none';
+        });
+        
+        // Afficher le grid correspondant
+        const targetSection = document.querySelector(`[data-slot-section="${slotId}"]`);
+        if (targetSection) {
+            targetSection.style.display = 'block';
+        }
+        
+        currentActiveSlot = slotId;
+        
+        // Initialiser les filtres pour ce slot
+        updateSpellFilterOptions(slotId);
+    }
+    
+    // Gestion du clic sur les slots
+    slotSelectors.forEach(selector => {
+        selector.addEventListener('click', function() {
+            const slotId = this.dataset.slot;
+            
+            // Retirer la classe active de tous les slots
+            slotSelectors.forEach(s => s.classList.remove('active'));
+            
+            // Ajouter la classe active au slot cliqué
+            this.classList.add('active');
+            
+            // Afficher le grid correspondant
+            showSlotGrid(slotId);
+        });
+    });
+    
+    // Gestion de la sélection des items
+    itemCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const itemId = this.dataset.itemId;
+            const slot = this.dataset.slot;
+            const slotItems = document.querySelectorAll(`[data-slot-items="${slot}"] .item-card`);
+            
+            // Désélectionner les autres items du même slot
+            slotItems.forEach(c => c.classList.remove('selected'));
+            
+            // Sélectionner cet item
+            this.classList.add('selected');
+            
+            // Mettre à jour l'input caché
+            document.getElementById(`input-${slot}`).value = itemId;
+            
+            // Mettre à jour le preview
+            const itemName = this.querySelector('.item-name').textContent.trim();
+            const itemIcon = this.querySelector('.item-icon');
+            let previewHtml = '';
+            
+            if (itemIcon) {
+                previewHtml += `<img src="${itemIcon.src}" alt="">`;
+            }
+            previewHtml += `<span class="small">${itemName}</span>`;
+            
+            document.getElementById(`preview-${slot}`).innerHTML = previewHtml;
+        });
+    });
+    
+    // Fonction pour mettre à jour les options du select de sorts
+    function updateSpellFilterOptions(slot) {
+        const container = document.querySelector(`[data-slot-items="${slot}"]`);
+        const select = document.querySelector(`.spell-type-filter[data-slot="${slot}"]`);
+        
+        if (!container || !select) return;
+        
+        const items = container.querySelectorAll('.item-wrapper:not(.hidden)');
+        const spellsSet = new Set();
+        
+        items.forEach(item => {
+            const spellNames = item.dataset.spellNames;
+            if (spellNames) {
+                spellNames.split('|').forEach(spell => {
+                    if (spell.trim()) {
+                        spellsSet.add(spell.trim());
+                    }
+                });
+            }
+        });
+        
+        // Sauvegarder la valeur actuelle
+        const currentValue = select.value;
+        
+        // Réinitialiser le select
+        select.innerHTML = '<option value="all">✨ Tous les sorts</option>';
+        
+        // Ajouter les sorts triés par ordre alphabétique
+        const sortedSpells = Array.from(spellsSet).sort();
+        sortedSpells.forEach(spell => {
+            const option = document.createElement('option');
+            option.value = spell;
+            option.textContent = spell.charAt(0).toUpperCase() + spell.slice(1);
+            select.appendChild(option);
+        });
+        
+        // Restaurer la valeur si elle existe toujours
+        if (currentValue !== 'all' && sortedSpells.includes(currentValue)) {
+            select.value = currentValue;
+        } else {
+            select.value = 'all';
+        }
+    }
+    
+    // Fonction pour appliquer tous les filtres sur un slot
+    function applyFilters(slot) {
+        const container = document.querySelector(`[data-slot-items="${slot}"]`);
+        if (!container) return;
+        
+        const items = container.querySelectorAll('.item-wrapper');
+        
+        // Récupérer les filtres actifs
+        const armorFilter = document.querySelector(`.armor-filter button.active[data-slot="${slot}"]`)?.dataset.filter || 'all';
+        const qualityFilter = document.querySelector(`.quality-filter button.active[data-slot="${slot}"]`)?.dataset.quality || 'all';
+        const searchInput = document.querySelector(`.search-input[data-slot="${slot}"]`);
+        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+        const spellFilter = document.querySelector(`.spell-type-filter[data-slot="${slot}"]`)?.value || 'all';
+        
+        items.forEach(item => {
+            const armorType = item.dataset.armorType || '';
+            const quality = item.dataset.quality || '';
+            const itemName = item.dataset.itemName || '';
+            const spellNames = item.dataset.spellNames || '';
+            
+            let show = true;
+            
+            // Filtre armure
+            if (armorFilter !== 'all') {
+                if (!armorType.includes(armorFilter)) {
+                    show = false;
+                }
+            }
+            
+            // Filtre qualité
+            if (qualityFilter !== 'all') {
+                if (quality !== qualityFilter) {
+                    show = false;
+                }
+            }
+            
+            // Filtre recherche
+            if (searchTerm) {
+                if (!itemName.includes(searchTerm)) {
+                    show = false;
+                }
+            }
+            
+            // Filtre sort
+            if (spellFilter !== 'all') {
+                if (!spellNames.includes(spellFilter)) {
+                    show = false;
+                }
+            }
+            
+            if (show) {
+                item.classList.remove('hidden');
+            } else {
+                item.classList.add('hidden');
+            }
+        });
+        
+        // Mettre à jour les options du select de sorts après filtrage
+        updateSpellFilterOptions(slot);
+    }
+    
+    // Gestion des filtres d'armure
+    const armorFilterButtons = document.querySelectorAll('.armor-filter button');
+    armorFilterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const slot = this.dataset.slot;
+            
+            // Mettre à jour les boutons actifs
+            const siblingButtons = this.closest('.armor-filter').querySelectorAll('button');
+            siblingButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            applyFilters(slot);
+        });
+    });
+    
+    // Gestion des filtres de qualité
+    const qualityFilterButtons = document.querySelectorAll('.quality-filter button');
+    qualityFilterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const slot = this.dataset.slot;
+            
+            // Mettre à jour les boutons actifs
+            const siblingButtons = this.closest('.quality-filter').querySelectorAll('button');
+            siblingButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            applyFilters(slot);
+        });
+    });
+    
+    // Gestion de la recherche
+    const searchInputs = document.querySelectorAll('.search-input');
+    searchInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const slot = this.dataset.slot;
+            applyFilters(slot);
+        });
+    });
+    
+    // Gestion du filtre de sorts
+    const spellFilterSelects = document.querySelectorAll('.spell-type-filter');
+    spellFilterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            const slot = this.dataset.slot;
+            applyFilters(slot);
+        });
+    });
+});
+</script>
+{% endblock %}
