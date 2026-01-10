@@ -12,6 +12,21 @@ class PaxDeiClient
     
     private const MAPS = [
         'merrie' => [
+            'shire', 'yarborn', 'caster', 'gael', 'nene', 'ulaid', 'wiht', 'ardbog', 'down', 'bearm'
+        ],
+        'ancien' => [
+            'libornes', 'lavedan', 'salias', 'tursan', 'volvestre', 'tolosa', 'armanhac', 'maremna', 'gravas', 'astarac'
+        ],
+        'inis_gallia' => [
+            'atigny', 'javerdus', 'morvan', 'jura', 'aras', 'langres', 'nones', 'trecassis', 'vitry', 'ardennes'
+        ],
+        'kerys' => [
+            'tremen', 'llydaw', 'pladenn', 'aven', 'ewyas', 'dreger', 'retz', 'dolavon', 'vanes', 'bronyr'
+        ],
+    ];
+    
+    private const TELEPORT_MAPS = [
+        'merrie' => [
             'shire', 'yarborn', 'caster', 'gael', 'nene', 'ulaid', 'wiht', 'ardbog', 'down', 'bearm',
             'Repos du barde (Ancient)', 'Portail de Perceval (PVP - Avalon)', 'Portail sauvage (Inis Galia)'
         ],
@@ -45,7 +60,7 @@ class PaxDeiClient
     
     public static function getAllMapsWithRegions(): array
     {
-        return self::MAPS;
+        return self::TELEPORT_MAPS;
     }
 
     public function fetchAllItems(): array
