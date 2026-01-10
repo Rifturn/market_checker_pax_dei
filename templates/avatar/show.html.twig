@@ -24,10 +24,11 @@
                     <div class="card border-danger">
                         <div class="card-body">
                             <h6 class="card-title">{{ avatarSkill.skill.name }}</h6>
+                            {% set displayLevel = avatarSkill.level == 0 ? 1 : avatarSkill.level %}
                             <div class="progress" style="height: 30px;">
                                 <div class="progress-bar bg-danger" role="progressbar" 
-                                     style="width: {{ (avatarSkill.level / avatarSkill.skill.skillLevelCap * 100)|round }}%">
-                                    Niveau {{ avatarSkill.level }} / {{ avatarSkill.skill.skillLevelCap }}
+                                     style="width: {{ (displayLevel / avatarSkill.skill.skillLevelCap * 100)|round }}%">
+                                    Niveau {{ displayLevel }} / {{ avatarSkill.skill.skillLevelCap }}
                                 </div>
                             </div>
                         </div>
@@ -47,10 +48,11 @@
                     <div class="card border-primary">
                         <div class="card-body">
                             <h6 class="card-title">{{ avatarSkill.skill.name }}</h6>
+                            {% set displayLevel = avatarSkill.level == 0 ? 1 : avatarSkill.level %}
                             <div class="progress" style="height: 30px;">
                                 <div class="progress-bar bg-primary" role="progressbar" 
-                                     style="width: {{ (avatarSkill.level / avatarSkill.skill.skillLevelCap * 100)|round }}%">
-                                    Niveau {{ avatarSkill.level }} / {{ avatarSkill.skill.skillLevelCap }}
+                                     style="width: {{ (displayLevel / avatarSkill.skill.skillLevelCap * 100)|round }}%">
+                                    Niveau {{ displayLevel }} / {{ avatarSkill.skill.skillLevelCap }}
                                 </div>
                             </div>
                         </div>

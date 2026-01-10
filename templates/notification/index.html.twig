@@ -1,0 +1,210 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Notifications - Pax Dei Market{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .notification-card {
+            transition: all 0.2s;
+            margin-bottom: 1rem;
+        }
+        .notification-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .notification-icon {
+            font-size: 2rem;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+        .notification-time {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        .reaction-button {
+            cursor: pointer;
+            border: 1px solid #dee2e6;
+            border-radius: 20px;
+            padding: 0.25rem 0.75rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .reaction-button:hover {
+            background-color: #f8f9fa;
+            border-color: #007bff;
+        }
+        .reaction-button.active {
+            background-color: #e7f3ff;
+            border-color: #007bff;
+            font-weight: bold;
+        }
+        .reaction-emoji {
+            font-size: 1.2rem;
+        }
+        .reaction-users {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+        .reaction-user-badge {
+            display: inline-block;
+            background-color: #e9ecef;
+            border-radius: 12px;
+            padding: 0.15rem 0.5rem;
+            margin: 0.15rem 0.2rem;
+            font-size: 0.8rem;
+        }
+        .notification-skill {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .notification-teleport {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>🔔 Notifications</h1>
+    <p class="text-muted">Suivez les exploits de la communauté</p>
+    
+    <div class="section-divider"></div>
+
+    {% if notifications|length > 0 %}
+        {% for notification in notifications %}
+        <div class="card notification-card">
+            <div class="card-body">
+                <div class="d-flex gap-3">
+                    <div class="notification-icon {% if notification.type == 'skill_up' %}notification-skill{% else %}notification-teleport{% endif %}">
+                        {% if notification.type == 'skill_up' %}
+                            📈
+                        {% else %}
+                            🗺️
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <p class="mb-2">{{ notification.message }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="notification-time">
+                                {% set now = 'now'|date('U') %}
+                                {% set createdAt = notification.createdAt|date('U') %}
+                                {% set diff = now - createdAt %}
+                                {% if diff < 3600 %}
+                                    Il y a {{ (diff / 60)|round }} minute(s)
+                                {% elseif diff < 86400 %}
+                                    Il y a {{ (diff / 3600)|round }} heure(s)
+                                {% else %}
+                                    Le {{ notification.createdAt|date('d/m/Y à H:i') }}
+                                {% endif %}
+                            </small>
+                            <div class="reactions">
+                                {% set reactionCounts = notification.getReactionCounts() %}
+                                {% set userHasReacted = false %}
+                                {% if app.user %}
+                                    {% for emoji, data in reactionCounts %}
+                                        {% for user in data.users %}
+                                            {% if user.id == app.user.id %}
+                                                {% set userHasReacted = true %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                {% endif %}
+                                
+                                <div>
+                                    <button class="btn btn-sm reaction-button {% if userHasReacted %}active{% endif %}" 
+                                            data-notification-id="{{ notification.id }}"
+                                            onclick="toggleReaction({{ notification.id }})">
+                                        <span class="reaction-emoji">👏</span>
+                                        <span class="reaction-count" id="count-{{ notification.id }}">
+                                            {{ reactionCounts['👏'].count|default(0) }}
+                                        </span>
+                                    </button>
+                                    
+                                    {% if reactionCounts['👏'] is defined and reactionCounts['👏'].count > 0 %}
+                                        <div class="reaction-users" id="users-{{ notification.id }}">
+                                            {% for user in reactionCounts['👏'].users %}
+                                                <span class="reaction-user-badge">
+                                                    {{ user.avatars|length > 0 ? user.avatars.first.name : user.username }}
+                                                </span>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info">
+            <strong>Aucune notification</strong><br>
+            Il n'y a pas encore de notifications. Les exploits des joueurs apparaîtront ici !
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        function toggleReaction(notificationId) {
+            fetch(`/notifications/${notificationId}/react`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mettre à jour le compteur
+                    const countElement = document.getElementById(`count-${notificationId}`);
+                    const reactions = data.reactions['👏'] || { count: 0, users: [] };
+                    countElement.textContent = reactions.count;
+                    
+                    // Toggle la classe active
+                    const button = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                    if (data.action === 'added') {
+                        button.classList.add('active');
+                    } else {
+                        button.classList.remove('active');
+                    }
+                    
+                    // Mettre à jour la liste des utilisateurs
+                    const usersContainer = document.getElementById(`users-${notificationId}`);
+                    if (reactions.count > 0) {
+                        const userBadges = reactions.users.map(user => 
+                            `<span class="reaction-user-badge">${user.username}</span>`
+                        ).join('');
+                        
+                        if (usersContainer) {
+                            usersContainer.innerHTML = userBadges;
+                        } else {
+                            // Créer le conteneur s'il n'existe pas
+                            const newContainer = document.createElement('div');
+                            newContainer.className = 'reaction-users';
+                            newContainer.id = `users-${notificationId}`;
+                            newContainer.innerHTML = userBadges;
+                            button.parentElement.appendChild(newContainer);
+                        }
+                    } else if (usersContainer) {
+                        // Supprimer le conteneur s'il n'y a plus de réactions
+                        usersContainer.remove();
+                    }
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+{% endblock %}

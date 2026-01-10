@@ -22,7 +22,7 @@ class AvatarSkill
     private ?Skill $skill = null;
 
     #[ORM\Column]
-    private ?int $level = 0;
+    private ?int $level = 1;
 
     public function getId(): ?int
     {

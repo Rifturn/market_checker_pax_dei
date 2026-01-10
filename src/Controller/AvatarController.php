@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Avatar;
 use App\Entity\AvatarSkill;
 use App\Entity\AvatarTeleport;
+use App\Entity\Notification;
 use App\Form\AvatarType;
 use App\Repository\AvatarRepository;
 use App\Repository\AvatarTeleportRepository;
@@ -50,13 +51,13 @@ class AvatarController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Créer automatiquement toutes les compétences à niveau 0
+            // Créer automatiquement toutes les compétences à niveau 1
             $skills = $skillRepository->findAll();
             foreach ($skills as $skill) {
                 $avatarSkill = new AvatarSkill();
                 $avatarSkill->setAvatar($avatar);
                 $avatarSkill->setSkill($skill);
-                $avatarSkill->setLevel(0);
+                $avatarSkill->setLevel(1);
                 $avatar->addAvatarSkill($avatarSkill);
                 $entityManager->persist($avatarSkill);
             }
@@ -64,7 +65,7 @@ class AvatarController extends AbstractController
             $entityManager->persist($avatar);
             $entityManager->flush();
 
-            $this->addFlash('success', 'Avatar créé avec succès avec toutes les compétences initialisées à 0 !');
+            $this->addFlash('success', 'Avatar créé avec succès avec toutes les compétences initialisées à 1 !');
             return $this->redirectToRoute('avatar_skills', ['id' => $avatar->getId()]);
         }
 
@@ -115,15 +116,42 @@ class AvatarController extends AbstractController
         if ($request->isMethod('POST')) {
             $skillLevels = $request->request->all('skills');
             
+            $hasSkillLevelUp = false;
+            $skillUpMessage = null;
+            
             foreach ($avatar->getAvatarSkills() as $avatarSkill) {
                 $skillId = $avatarSkill->getSkill()->getId();
                 if (isset($skillLevels[$skillId])) {
-                    $level = (int) $skillLevels[$skillId];
+                    $oldLevel = $avatarSkill->getLevel();
+                    $newLevel = (int) $skillLevels[$skillId];
+                    
                     // Vérifier que le niveau est dans la plage valide
-                    if ($level >= 0 && $level <= $maxLevel) {
-                        $avatarSkill->setLevel($level);
+                    if ($newLevel >= 1 && $newLevel <= $maxLevel) {
+                        $avatarSkill->setLevel($newLevel);
+                        
+                        // Créer une notification si niveau augmente et ancien niveau >= 2
+                        if ($newLevel > $oldLevel && $oldLevel >= 2 && !$hasSkillLevelUp) {
+                            $hasSkillLevelUp = true;
+                            $skillName = $avatarSkill->getSkill()->getName();
+                            $skillUpMessage = sprintf(
+                                'Bravo à %s qui passe sa compétence de %s du niveau %d à %d !',
+                                $avatar->getName(),
+                                $skillName,
+                                $oldLevel,
+                                $newLevel
+                            );
+                        }
                     }
                 }
+            }
+            
+            // Créer la notification si nécessaire
+            if ($hasSkillLevelUp && $skillUpMessage) {
+                $notification = new Notification();
+                $notification->setAvatar($avatar);
+                $notification->setType('skill_up');
+                $notification->setMessage($skillUpMessage);
+                $entityManager->persist($notification);
             }
 
             $entityManager->flush();
@@ -172,6 +200,9 @@ class AvatarController extends AbstractController
         if ($request->isMethod('POST')) {
             $unlockedTeleports = $request->request->all('teleports') ?? [];
             
+            $hasNewTeleport = false;
+            $newTeleportInfo = null;
+            
             // Parcourir tous les maps et zones
             foreach ($allMapsWithRegions as $map => $zones) {
                 foreach ($zones as $zone) {
@@ -181,7 +212,17 @@ class AvatarController extends AbstractController
                     // Vérifier si le téléport existe déjà
                     if (isset($teleportsIndex[$key])) {
                         $teleport = $teleportsIndex[$key];
+                        $wasUnlocked = $teleport->isUnlocked();
                         $teleport->setUnlocked($isUnlocked);
+                        
+                        // Détecter un nouveau déblocage
+                        if (!$wasUnlocked && $isUnlocked && !$hasNewTeleport) {
+                            $hasNewTeleport = true;
+                            $newTeleportInfo = [
+                                'map' => ucfirst($map),
+                                'zone' => ucfirst($zone)
+                            ];
+                        }
                     } else {
                         // Créer un nouveau téléport
                         $teleport = new AvatarTeleport();
@@ -191,8 +232,34 @@ class AvatarController extends AbstractController
                         $teleport->setUnlocked($isUnlocked);
                         $entityManager->persist($teleport);
                         $teleportsIndex[$key] = $teleport;
+                        
+                        // Détecter un nouveau déblocage
+                        if ($isUnlocked && !$hasNewTeleport) {
+                            $hasNewTeleport = true;
+                            $newTeleportInfo = [
+                                'map' => ucfirst($map),
+                                'zone' => ucfirst($zone)
+                            ];
+                        }
                     }
                 }
+            }
+            
+            // Créer la notification si nécessaire
+            if ($hasNewTeleport && $newTeleportInfo) {
+                $message = sprintf(
+                    'Bravo à %s qui débloque le TP de %s dans la map %s !',
+                    $avatar->getName(),
+                    $newTeleportInfo['zone'],
+                    $newTeleportInfo['map']
+                );
+                
+                $notification = new Notification();
+                $notification->setAvatar($avatar);
+                $notification->setType('teleport_unlocked');
+                $notification->setMessage($message);
+                $notification->setMetadata($newTeleportInfo);
+                $entityManager->persist($notification);
             }
             
             $entityManager->flush();
