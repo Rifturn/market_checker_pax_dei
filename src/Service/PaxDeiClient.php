@@ -11,11 +11,26 @@ class PaxDeiClient
     private const BASE_URL = 'https://data-cdn.gaming.tools/paxdei/market/demeter/';
     
     private const MAPS = [
-        'merrie' => ['shire', 'yarborn', 'caster', 'gael', 'nene', 'ulaid', 'wiht', 'ardbog', 'down', 'bearm'],
-        'ancien' => ['libornes', 'lavedan', 'salias', 'tursan', 'volvestre', 'tolosa', 'armanhac', 'maremna', 'gravas', 'astarac'],
-        'inis_gallia' => ['atigny', 'javerdus', 'morvan', 'jura', 'aras', 'langres', 'nones', 'trecassis', 'vitry', 'ardennes'],
-        'kerys' => ['tremen', 'llydaw', 'pladenn', 'aven', 'ewyas', 'dreger', 'retz', 'dolavon', 'vanes', 'bronyr'],
-        'lyonesse' => ['brecilien', 'corbin', 'karrek', 'avalon'],
+        'merrie' => [
+            'shire', 'yarborn', 'caster', 'gael', 'nene', 'ulaid', 'wiht', 'ardbog', 'down', 'bearm',
+            'Repos du barde (Ancient)', 'Portail de Perceval (PVP - Avalon)', 'Portail sauvage (Inis Galia)'
+        ],
+        'ancien' => [
+            'libornes', 'lavedan', 'salias', 'tursan', 'volvestre', 'tolosa', 'armanhac', 'maremna', 'gravas', 'astarac',
+            'Portail des pèlerins (Kerys)', 'Repos du barde (Merrie)', 'Tour d\'Emrys (PVP - Karrek)'
+        ],
+        'inis_gallia' => [
+            'atigny', 'javerdus', 'morvan', 'jura', 'aras', 'langres', 'nones', 'trecassis', 'vitry', 'ardennes',
+            'Portail de la vouivre (Kerys)', 'Portail de Ségurant (PVP - Corbin)', 'Portail sauvage (Merrie)'
+        ],
+        'kerys' => [
+            'tremen', 'llydaw', 'pladenn', 'aven', 'ewyas', 'dreger', 'retz', 'dolavon', 'vanes', 'bronyr',
+            'Portail des pèlerins (Ancient)', 'Pierre de Gwydion (PVP - Brecillien)', 'Portail de la vouivre (Inis Galia)'
+        ],
+        'lyonesse' => [
+            'brecilien', 'corbin', 'karrek', 'avalon',
+            'Pierre de Gwydion (Kerys)', 'Portail de Ségurant (Inis Galia)', 'Portail de Perceval (Merrie)', 'Tour d\'Emrys (Ancient)'
+        ],
     ];
     
     public static function getMaps(): array

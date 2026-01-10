@@ -19,6 +19,13 @@
         .zone-checkbox.unlocked {
             background-color: #d4edda;
         }
+        .zone-checkbox.border-info {
+            border-width: 2px !important;
+            background-color: #e7f3ff;
+        }
+        .zone-checkbox.border-info.unlocked {
+            background-color: #d1ecf1;
+        }
         .progress-custom {
             height: 30px;
             font-size: 1rem;
@@ -104,8 +111,9 @@
                 <div class="card-body">
                     <div class="row">
                         {% for zone in mapData.zones %}
+                        {% set isPortal = '(' in zone.name %}
                         <div class="col-md-4 col-lg-3 mb-3">
-                            <div class="zone-checkbox {% if zone.unlocked %}unlocked{% endif %}">
+                            <div class="zone-checkbox {% if zone.unlocked %}unlocked{% endif %} {% if isPortal %}border border-info{% endif %}">
                                 <div class="form-check">
                                     <input class="form-check-input" 
                                            type="checkbox" 
@@ -114,9 +122,17 @@
                                            {% if zone.unlocked %}checked{% endif %}>
                                     <label class="form-check-label" for="tp_{{ zone.key }}">
                                         {% if zone.unlocked %}
-                                            ✅ {{ zone.name }}
+                                            {% if isPortal %}
+                                                🌀 {{ zone.name }}
+                                            {% else %}
+                                                ✅ {{ zone.name }}
+                                            {% endif %}
                                         {% else %}
-                                            📍 {{ zone.name }}
+                                            {% if isPortal %}
+                                                🚪 {{ zone.name }}
+                                            {% else %}
+                                                📍 {{ zone.name }}
+                                            {% endif %}
                                         {% endif %}
                                     </label>
                                 </div>
@@ -144,14 +160,24 @@
         document.querySelectorAll('.zone-checkbox input[type="checkbox"]').forEach(checkbox => {
             checkbox.addEventListener('change', function() {
                 const parent = this.closest('.zone-checkbox');
+                const label = parent.querySelector('label');
+                const zoneName = label.innerHTML.replace(/^(📍|✅|🚪|🌀)\s*/, '');
+                const isPortal = parent.classList.contains('border-info');
+                
                 if (this.checked) {
                     parent.classList.add('unlocked');
-                    const label = parent.querySelector('label');
-                    label.innerHTML = '✅ ' + label.innerHTML.replace(/^(📍|✅)\s*/, '');
+                    if (isPortal) {
+                        label.innerHTML = '🌀 ' + zoneName;
+                    } else {
+                        label.innerHTML = '✅ ' + zoneName;
+                    }
                 } else {
                     parent.classList.remove('unlocked');
-                    const label = parent.querySelector('label');
-                    label.innerHTML = '📍 ' + label.innerHTML.replace(/^(📍|✅)\s*/, '');
+                    if (isPortal) {
+                        label.innerHTML = '🚪 ' + zoneName;
+                    } else {
+                        label.innerHTML = '📍 ' + zoneName;
+                    }
                 }
             });
         });
