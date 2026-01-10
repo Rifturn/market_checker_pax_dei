@@ -2,6 +2,30 @@
 
 {% block title %}Avatars - Pax Dei Market{% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .skill-progress-container {
+            position: relative;
+            height: 20px;
+        }
+        .skill-progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            line-height: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #1f2937;
+            text-shadow: 0 0 3px white, 0 0 3px white, 0 0 3px white;
+            z-index: 1;
+        }
+        .progress {
+            position: relative;
+        }
+    </style>
+{% endblock %}
+
 {% block body %}
 <div class="container mt-4">
     <h1>👤 Avatars de la Communauté</h1>
@@ -54,11 +78,13 @@
                     {% for avatarSkill in topSkills %}
                     <div class="mb-2">
                         <small class="text-muted">{{ avatarSkill.skill.name }}</small>
-                        <div class="progress" style="height: 20px;">
-                            <div class="progress-bar bg-{% if avatarSkill.skill.uiGroup == 'combat' %}danger{% else %}primary{% endif %}" 
-                                 role="progressbar" 
-                                 style="width: {{ (avatarSkill.level / avatarSkill.skill.skillLevelCap * 100)|round }}%">
-                                {{ avatarSkill.level }}/{{ avatarSkill.skill.skillLevelCap }}
+                        <div class="skill-progress-container">
+                            <div class="skill-progress-text">{{ avatarSkill.level }}/{{ avatarSkill.skill.skillLevelCap }}</div>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-{% if avatarSkill.skill.uiGroup == 'combat' %}danger{% else %}primary{% endif %}" 
+                                     role="progressbar" 
+                                     style="width: {{ (avatarSkill.level / avatarSkill.skill.skillLevelCap * 100)|round }}%">
+                                </div>
                             </div>
                         </div>
                     </div>

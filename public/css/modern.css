@@ -55,6 +55,11 @@ body {
     border-bottom: 1px solid var(--border-color);
     padding-top: 0;
     padding-bottom: 0;
+    z-index: 1030;
+}
+
+.navbar.sticky-top {
+    z-index: 1030;
 }
 
 .navbar-brand {

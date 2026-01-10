@@ -59,6 +59,14 @@
             height: 32px;
             border-radius: 4px;
         }
+        /* Fix pour le z-index du dropdown TomSelect */
+        .ts-dropdown {
+            z-index: 10000 !important;
+        }
+        #itemsTable thead th {
+            position: relative;
+            z-index: 1;
+        }
     </style>
 {% endblock %}
 
@@ -251,6 +259,7 @@
                         new TomSelect('#category-filter', {
                             plugins: ['remove_button'],
                             placeholder: 'Toutes les catégories',
+                            dropdownParent: 'body',
                             onChange: function(values) {
                                 if (values.length === 0) {
                                     column.search('').draw();
