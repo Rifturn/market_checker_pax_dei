@@ -9,6 +9,10 @@
             transition: all 0.2s;
             margin-bottom: 1rem;
         }
+        .notification-card.unread {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
         .notification-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
@@ -74,14 +78,27 @@
 
 {% block body %}
 <div class="container mt-4">
-    <h1>🔔 Notifications</h1>
-    <p class="text-muted">Suivez les exploits de la communauté</p>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1>🔔 Notifications</h1>
+            <p class="text-muted">Suivez les exploits de la communauté</p>
+        </div>
+        {% if notifications|length > 0 %}
+        <div>
+            <button class="btn btn-primary" id="markAllReadBtn" onclick="markAllAsRead()">
+                ✓ Tout marquer comme lu <span id="unreadCountText">({{ unreadCount }})</span>
+            </button>
+        </div>
+        {% endif %}
+    </div>
     
     <div class="section-divider"></div>
 
     {% if notifications|length > 0 %}
         {% for notification in notifications %}
-        <div class="card notification-card">
+        <div class="card notification-card {% if not notification.isReadByUser(app.user) %}unread{% endif %}" 
+             data-notification-id="{{ notification.id }}"
+             onmouseenter="markAsRead({{ notification.id }})">
             <div class="card-body">
                 <div class="d-flex gap-3">
                     <div class="notification-icon {% if notification.type == 'skill_up' %}notification-skill{% else %}notification-teleport{% endif %}">
@@ -158,6 +175,104 @@
 {% block javascripts %}
     {{ parent() }}
     <script>
+        // Initialiser les compteurs avec la valeur du serveur (empêche l'appel API)
+        const pageUnreadCount = {{ unreadCount }};
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mettre à jour le badge de la navbar
+            const badge = document.getElementById('unreadBadge');
+            if (badge) {
+                if (pageUnreadCount > 0) {
+                    badge.textContent = pageUnreadCount > 99 ? '99+' : pageUnreadCount;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+            
+            // Mettre à jour le texte du bouton
+            const countText = document.getElementById('unreadCountText');
+            if (countText) {
+                countText.textContent = '(' + pageUnreadCount + ')';
+            }
+        });
+        
+        // Redéfinir updateUnreadBadge pour ne pas faire d'appel API sur cette page
+        function updateUnreadBadge() {
+            // Ne rien faire sur la page des notifications
+        }
+        
+        function markAsRead(notificationId) {
+            const card = document.querySelector(`[data-notification-id="${notificationId}"]`);
+            if (!card || !card.classList.contains('unread')) {
+                return; // Déjà marquée comme lue
+            }
+
+            fetch(`/notifications/${notificationId}/mark-read`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Retirer le style "non lu"
+                    card.classList.remove('unread');
+                    
+                    // Mettre à jour le badge dans la navbar
+                    if (typeof updateUnreadBadge === 'function') {
+                        updateUnreadBadge();
+                    }
+                    
+                    // Mettre à jour le bouton "tout marquer comme lu"
+                    updateMarkAllButton(data.unreadCount);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function markAllAsRead() {
+            fetch('/notifications/mark-all-read', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Retirer le style "non lu" de toutes les cartes
+                    document.querySelectorAll('.notification-card.unread').forEach(card => {
+                        card.classList.remove('unread');
+                    });
+                    
+                    // Mettre à jour le badge dans la navbar
+                    if (typeof updateUnreadBadge === 'function') {
+                        updateUnreadBadge();
+                    }
+                    
+                    // Cacher le bouton
+                    updateMarkAllButton(0);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function updateMarkAllButton(unreadCount) {
+            const button = document.getElementById('markAllReadBtn');
+            const countText = document.getElementById('unreadCountText');
+            if (button && countText) {
+                if (unreadCount > 0) {
+                    countText.textContent = `(${unreadCount})`;
+                    button.style.display = 'inline-block';
+                } else {
+                    countText.textContent = '(0)';
+                    button.style.display = 'none';
+                }
+            }
+        }
+
         function toggleReaction(notificationId) {
             fetch(`/notifications/${notificationId}/react`, {
                 method: 'POST',
@@ -173,12 +288,12 @@
                     const reactions = data.reactions['👏'] || { count: 0, users: [] };
                     countElement.textContent = reactions.count;
                     
-                    // Toggle la classe active
-                    const button = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                    // Toggle la classe active sur le bouton
+                    const reactionButton = document.querySelector(`button[data-notification-id="${notificationId}"]`);
                     if (data.action === 'added') {
-                        button.classList.add('active');
+                        reactionButton.classList.add('active');
                     } else {
-                        button.classList.remove('active');
+                        reactionButton.classList.remove('active');
                     }
                     
                     // Mettre à jour la liste des utilisateurs
@@ -196,7 +311,8 @@
                             newContainer.className = 'reaction-users';
                             newContainer.id = `users-${notificationId}`;
                             newContainer.innerHTML = userBadges;
-                            button.parentElement.appendChild(newContainer);
+                            // L'ajouter dans le même conteneur parent que le bouton
+                            reactionButton.parentElement.appendChild(newContainer);
                         }
                     } else if (usersContainer) {
                         // Supprimer le conteneur s'il n'y a plus de réactions

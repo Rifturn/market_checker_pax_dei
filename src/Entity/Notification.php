@@ -36,10 +36,14 @@ class Notification
     #[ORM\OneToMany(targetEntity: NotificationReaction::class, mappedBy: 'notification', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $reactions;
 
+    #[ORM\OneToMany(targetEntity: NotificationRead::class, mappedBy: 'notification', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $reads;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->reactions = new ArrayCollection();
+        $this->reads = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -143,5 +147,47 @@ class Notification
             $counts[$emoji]['users'][] = $reaction->getUser();
         }
         return $counts;
+    }
+
+    /**
+     * @return Collection<int, NotificationRead>
+     */
+    public function getReads(): Collection
+    {
+        return $this->reads;
+    }
+
+    public function addRead(NotificationRead $read): static
+    {
+        if (!$this->reads->contains($read)) {
+            $this->reads->add($read);
+            $read->setNotification($this);
+        }
+
+        return $this;
+    }
+
+    public function removeRead(NotificationRead $read): static
+    {
+        if ($this->reads->removeElement($read)) {
+            if ($read->getNotification() === $this) {
+                $read->setNotification(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Check if notification has been read by a specific user
+     */
+    public function isReadByUser($user): bool
+    {
+        foreach ($this->reads as $read) {
+            if ($read->getUser() === $user) {
+                return true;
+            }
+        }
+        return false;
     }
 }
