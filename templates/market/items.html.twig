@@ -145,14 +145,32 @@
                                     </span>
                                     {% if isRelic and relicRecipes[itemId] is defined %}
                                         {% set craftedItem = relicRecipes[itemId] %}
+                                        {% set avatarsCapable = relicAvatars[itemId] ?? [] %}
                                         <div class="relic-craft-info">
                                             <small class="text-muted d-block mb-2">🔨 Craft :</small>
-                                            <div class="craft-item">
+                                            <div class="craft-item mb-2">
                                                 <img src="{{ craftedItem.iconPath }}" class="craft-icon" alt="{{ craftedItem.getName()['Fr'] ?? craftedItem.getName()['En'] }}">
                                                 <strong class="{% if craftedItem.quality == 'rare' %}text-primary{% elseif craftedItem.quality == 'uncommon' %}text-success{% endif %}">
                                                     {{ craftedItem.getName()['Fr'] ?? craftedItem.getName()['En'] ?? craftedItem.externalId }}
                                                 </strong>
                                             </div>
+                                            {% if avatarsCapable|length > 0 %}
+                                                <div class="mt-2 pt-2 border-top">
+                                                    <small class="text-success d-block mb-1"><strong>✅ Avatars capables :</strong></small>
+                                                    {% for avatarInfo in avatarsCapable %}
+                                                        <div class="mb-1">
+                                                            <small>
+                                                                <strong>👤 {{ avatarInfo.avatar.name }}</strong><br>
+                                                                <span class="text-muted">Lvl {{ avatarInfo.level }} - {{ (avatarInfo.probability * 100)|round }}%</span>
+                                                            </small>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                <div class="mt-2 pt-2 border-top">
+                                                    <small class="text-warning">⚠️ Aucun avatar capable</small>
+                                                </div>
+                                            {% endif %}
                                         </div>
                                     {% endif %}
                                 </a>

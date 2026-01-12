@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Repository\ItemEntityRepository;
 use App\Repository\ItemRecipeRepository;
 use App\Repository\GuildStockRepository;
+use App\Repository\AvatarRepository;
 use App\Service\PaxDeiClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,7 +15,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class MarketController extends AbstractController
 {
     #[Route('/market/{map}', name: 'market_items', defaults: ['map' => 'inis_gallia'])]
-    public function items(string $map, ItemEntityRepository $itemRepository, ItemRecipeRepository $recipeRepository, GuildStockRepository $guildStockRepo, PaxDeiClient $client): Response
+    public function items(string $map, ItemEntityRepository $itemRepository, ItemRecipeRepository $recipeRepository, GuildStockRepository $guildStockRepo, AvatarRepository $avatarRepository, PaxDeiClient $client): Response
     {
         // Vérifier que la map existe
         if (!in_array($map, PaxDeiClient::getMaps())) {
@@ -23,6 +24,9 @@ class MarketController extends AbstractController
         
         // Récupérer les items depuis la base de données
         $dbItems = $itemRepository->findAllWithCategory();
+        
+        // Récupérer tous les avatars avec leurs skills
+        $allAvatars = $avatarRepository->findAllWithUser();
         
         // Récupérer les IDs des items en stock
         $stockedItemIds = $guildStockRepo->getStockedItemIds();
@@ -74,6 +78,7 @@ class MarketController extends AbstractController
         
         // Récupérer les recettes pour les reliques
         $relicRecipes = [];
+        $relicAvatars = [];
         $allRecipes = $recipeRepository->createQueryBuilder('r')
             ->join('r.ingredient', 'i')
             ->join('r.output', 'o')
@@ -84,7 +89,12 @@ class MarketController extends AbstractController
             ->getResult();
         
         foreach ($allRecipes as $recipe) {
-            $relicRecipes[$recipe->getIngredient()->getExternalId()] = $recipe->getOutput();
+            $relicId = $recipe->getIngredient()->getExternalId();
+            $equipment = $recipe->getOutput();
+            $relicRecipes[$relicId] = $equipment;
+            
+            // Calculer les avatars capables de crafter cet équipement
+            $relicAvatars[$relicId] = $this->getCapableAvatarsForItem($equipment, $allAvatars);
         }
         
         return $this->render('market/items.html.twig', [
@@ -98,7 +108,54 @@ class MarketController extends AbstractController
             'minPrices' => $minPrices,
             'lastSeenByItem' => $lastSeenByItem,
             'relicRecipes' => $relicRecipes,
+            'relicAvatars' => $relicAvatars,
         ]);
+    }
+    
+    private function getCapableAvatarsForItem($item, $allAvatars): array
+    {
+        $capableAvatars = [];
+        
+        // Récupérer les données de recette depuis la base de données
+        $recipeData = $item->getRecipeData();
+        
+        if (!$recipeData || !isset($recipeData['skillRequired']) || !isset($recipeData['craftingStats'])) {
+            return [];
+        }
+        
+        $skillRequired = $recipeData['skillRequired'];
+        $craftingStats = $recipeData['craftingStats'];
+        
+        // Calculer les avatars capables de crafter (>80% de réussite)
+        foreach ($allAvatars as $avatar) {
+            // Trouver le skill correspondant dans l'avatar
+            foreach ($avatar->getAvatarSkills() as $avatarSkill) {
+                if ($avatarSkill->getSkill()->getExternalId() === $skillRequired) {
+                    $currentLevel = $avatarSkill->getLevel();
+                    
+                    // Trouver la probabilité pour ce niveau
+                    foreach ($craftingStats as $stat) {
+                        if (isset($stat['level']) && $stat['level'] == $currentLevel) {
+                            $currentProbability = $stat['calculatedProbability'] ?? 0;
+                            
+                            // Si la probabilité actuelle est > 80%, ajouter l'avatar
+                            if ($currentProbability > 0.8) {
+                                $capableAvatars[] = [
+                                    'avatar' => $avatar,
+                                    'level' => $currentLevel,
+                                    'probability' => $currentProbability,
+                                ];
+                            }
+                            break;
+                        }
+                    }
+                    
+                    break;
+                }
+            }
+        }
+        
+        return $capableAvatars;
     }
 
     #[Route('/categories', name: 'market_categories')]
