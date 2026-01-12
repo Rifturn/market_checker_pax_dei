@@ -56,6 +56,7 @@
                             <th colspan="2">Relique (Ingrédient)</th>
                             <th style="width: 80px; text-align: center;">→</th>
                             <th colspan="2">Équipement Crafté</th>
+                            <th>Avatars capables</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -104,6 +105,19 @@
                                 {% if recipe.equipment.category %}
                                     <br>
                                     <span class="badge bg-info">{{ recipe.equipment.category.name }}</span>
+                                {% endif %}
+                            </td>
+                            
+                            {# Avatars capables #}
+                            <td>
+                                {% if recipe.capableAvatars|length > 0 %}
+                                    {% for avatarInfo in recipe.capableAvatars %}
+                                        <span class="badge bg-success me-1 mb-1" title="Niveau {{ avatarInfo.level }} - {{ (avatarInfo.probability * 100)|round }}% de réussite">
+                                            👤 {{ avatarInfo.avatar.name }}
+                                        </span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">Aucun avatar</span>
                                 {% endif %}
                             </td>
                             
@@ -156,7 +170,7 @@
                     searchPlaceholder: "Nom, ID..."
                 },
                 columnDefs: [
-                    { orderable: false, targets: [0, 2, 3, 5] } // Désactiver le tri sur les icônes et actions
+                    { orderable: false, targets: [0, 2, 3, 6] } // Désactiver le tri sur les icônes et actions
                 ]
             });
         });

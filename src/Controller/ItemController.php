@@ -7,6 +7,7 @@ use App\Repository\ItemEntityRepository;
 use App\Repository\CategoryRepository;
 use App\Repository\SpellItemRepository;
 use App\Repository\AvatarRepository;
+use App\Repository\ItemRecipeRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -51,13 +52,26 @@ class ItemController extends AbstractController
     }
 
     #[Route('/item/{id}', name: 'item_show', methods: ['GET'])]
-    public function show(ItemEntity $item, SpellItemRepository $spellItemRepository, AvatarRepository $avatarRepository, \Symfony\Contracts\HttpClient\HttpClientInterface $httpClient): Response
+    public function show(ItemEntity $item, SpellItemRepository $spellItemRepository, AvatarRepository $avatarRepository, ItemRecipeRepository $itemRecipeRepository, \Symfony\Contracts\HttpClient\HttpClientInterface $httpClient): Response
     {
         // Récupérer les spells liés à cet item
         $spellItems = $spellItemRepository->findByItem($item->getId());
         
         // Récupérer tous les avatars avec leurs skills
         $allAvatars = $avatarRepository->findAllWithUser();
+        
+        // Si c'est une relique, récupérer l'équipement associé et les avatars capables de le crafter
+        $relicEquipment = null;
+        $capableAvatars = [];
+        if ($item->getCategory() && $item->getCategory()->getName() === 'Reliques') {
+            // Chercher la recette qui utilise cette relique comme ingrédient
+            $recipe = $itemRecipeRepository->findOneBy(['ingredient' => $item]);
+            if ($recipe) {
+                $relicEquipment = $recipe->getOutput();
+                // Calculer les avatars capables de crafter l'équipement
+                $capableAvatars = $this->getCapableAvatarsForItem($relicEquipment, $allAvatars);
+            }
+        }
         
         // Récupérer les recettes depuis l'API
         $recipes = [];
@@ -157,6 +171,54 @@ class ItemController extends AbstractController
             'item' => $item,
             'spellItems' => $spellItems,
             'recipes' => $recipes,
+            'relicEquipment' => $relicEquipment,
+            'capableAvatars' => $capableAvatars,
         ]);
+    }
+    
+    private function getCapableAvatarsForItem($item, $allAvatars): array
+    {
+        $capableAvatars = [];
+        
+        // Récupérer les données de recette depuis la base de données
+        $recipeData = $item->getRecipeData();
+        
+        if (!$recipeData || !isset($recipeData['skillRequired']) || !isset($recipeData['craftingStats'])) {
+            return [];
+        }
+        
+        $skillRequired = $recipeData['skillRequired'];
+        $craftingStats = $recipeData['craftingStats'];
+        
+        // Calculer les avatars capables de crafter (>80% de réussite)
+        foreach ($allAvatars as $avatar) {
+            // Trouver le skill correspondant dans l'avatar
+            foreach ($avatar->getAvatarSkills() as $avatarSkill) {
+                if ($avatarSkill->getSkill()->getExternalId() === $skillRequired) {
+                    $currentLevel = $avatarSkill->getLevel();
+                    
+                    // Trouver la probabilité pour ce niveau
+                    foreach ($craftingStats as $stat) {
+                        if (isset($stat['level']) && $stat['level'] == $currentLevel) {
+                            $currentProbability = $stat['calculatedProbability'] ?? 0;
+                            
+                            // Si la probabilité actuelle est > 80%, ajouter l'avatar
+                            if ($currentProbability > 0.8) {
+                                $capableAvatars[] = [
+                                    'avatar' => $avatar,
+                                    'level' => $currentLevel,
+                                    'probability' => $currentProbability,
+                                ];
+                            }
+                            break;
+                        }
+                    }
+                    
+                    break;
+                }
+            }
+        }
+        
+        return $capableAvatars;
     }
 }

@@ -68,6 +68,58 @@
                 </div>
             </div>
 
+            {# Équipement associé si c'est une relique #}
+            {% if relicEquipment %}
+            <div class="card mb-4 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">🔮 Équipement crafté avec cette relique</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        {% if relicEquipment.iconPath %}
+                        <img src="{{ relicEquipment.iconPath }}" 
+                             alt="{{ relicEquipment.name.Fr ?? relicEquipment.externalId }}" 
+                             class="me-3" 
+                             style="width: 64px; height: 64px; object-fit: contain; border-radius: 8px;">
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1 {% if relicEquipment.quality == 'rare' %}text-primary{% elseif relicEquipment.quality == 'uncommon' %}text-success{% endif %}">
+                                {{ relicEquipment.name.Fr ?? relicEquipment.name.En ?? relicEquipment.externalId }}
+                            </h5>
+                            {% if relicEquipment.category %}
+                            <span class="badge bg-info">{{ relicEquipment.category.name }}</span>
+                            {% endif %}
+                        </div>
+                        <a href="{{ path('item_show', {'id': relicEquipment.id}) }}" class="btn btn-primary">
+                            Voir l'équipement
+                        </a>
+                    </div>
+                    
+                    {# Avatars capables de crafter #}
+                    {% if capableAvatars|length > 0 %}
+                    <div class="mt-3">
+                        <h6 class="text-success">✅ Avatars capables de crafter (>80% de réussite) :</h6>
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            {% for avatarInfo in capableAvatars %}
+                            <div class="alert alert-success mb-0 py-2 px-3" role="alert">
+                                <strong>👤 {{ avatarInfo.avatar.name }}</strong>
+                                <br>
+                                <small>Niveau {{ avatarInfo.level }} - {{ (avatarInfo.probability * 100)|round }}% de réussite</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning mb-0" role="alert">
+                        <strong>⚠️ Aucun avatar capable</strong>
+                        <br>
+                        <small>Aucun de vos avatars n'a le niveau requis pour crafter cet équipement avec plus de 80% de réussite.</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
             {# Spells associés #}
             {% if spellItems|length > 0 %}
             <div class="card mb-4">

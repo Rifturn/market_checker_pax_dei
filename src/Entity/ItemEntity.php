@@ -40,11 +40,17 @@ class ItemEntity
     #[ORM\Column(length: 500, nullable: true)]
     private ?string $urlApi = null;
 
+    #[ORM\Column(length: 500, nullable: true)]
+    private ?string $recipeUrl = null;
+
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $armorCategory = null;
 
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $slotCategory = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $recipeData = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $createdAt = null;
@@ -151,6 +157,17 @@ class ItemEntity
         return $this;
     }
 
+    public function getRecipeUrl(): ?string
+    {
+        return $this->recipeUrl;
+    }
+
+    public function setRecipeUrl(?string $recipeUrl): static
+    {
+        $this->recipeUrl = $recipeUrl;
+        return $this;
+    }
+
     public function getArmorCategory(): ?string
     {
         return $this->armorCategory;
@@ -192,6 +209,17 @@ class ItemEntity
     public function setUpdatedAt(?\DateTimeInterface $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
+        return $this;
+    }
+
+    public function getRecipeData(): ?array
+    {
+        return $this->recipeData;
+    }
+
+    public function setRecipeData(?array $recipeData): static
+    {
+        $this->recipeData = $recipeData;
         return $this;
     }
 
