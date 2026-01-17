@@ -16,6 +16,20 @@
 
     <div class="section-divider"></div>
 
+    {# Bouton de prière #}
+    <div class="mb-3">
+        <button type="button" class="btn btn-{% if prayerActive %}warning{% else %}outline-secondary{% endif %} btn-lg" id="prayerButton" style="border: 3px solid {% if prayerActive %}#ffc107{% else %}#6c757d{% endif %}; font-weight: bold;">
+            {% if prayerActive %}
+                ✨ Prière ACTIVÉE (+1 niveau)
+            {% else %}
+                🙏 Activer la prière (+1 niveau)
+            {% endif %}
+        </button>
+        {% if prayerActive %}
+        <small class="text-muted ms-2">Tous les avatars gagnent +1 niveau de craft</small>
+        {% endif %}
+    </div>
+
     {% if stocks|length > 0 %}
         <div class="card">
             <div class="card-body">
@@ -67,11 +81,11 @@
                                 <td>
                                     {% if craftableByAvatars[stock.item.id] is defined and craftableByAvatars[stock.item.id]|length > 0 %}
                                         <div class="d-flex flex-wrap gap-1">
-                                            {% for capable in craftableByAvatars[stock.item.id] %}
+                            {% for capable in craftableByAvatars[stock.item.id] %}
                                                 <a href="{{ path('avatar_show', {'id': capable.avatar.id}) }}" 
                                                    class="badge bg-success text-decoration-none" 
-                                                   title="{{ capable.avatar.name }} ({{ capable.avatar.user.username }}) - {{ (capable.probability * 100)|number_format(0) }}% de réussite">
-                                                    {{ capable.avatar.name }}
+                                                   title="{{ capable.avatar.name }} ({{ capable.avatar.user.username }}) - Niveau {{ capable.level }}{% if prayerActive %} (+1 prière = {{ capable.effectiveLevel }}){% endif %} - {{ (capable.probability * 100)|number_format(0) }}% de réussite">
+                                                    {{ capable.avatar.name }} ({% if prayerActive %}{{ capable.effectiveLevel }}{% else %}{{ capable.level }}{% endif %})
                                                 </a>
                                             {% endfor %}
                                         </div>
@@ -105,16 +119,36 @@
 
 {% block javascripts %}
     {{ parent() }}
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <script>
         $(document).ready(function() {
             $('#stockTable').DataTable({
                 language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json'
+                    url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json'
                 },
                 order: [[5, 'desc']],
                 pageLength: 25,
                 scrollX: true,
                 autoWidth: false
+            });
+            
+            // Gérer le bouton de prière
+            $('#prayerButton').on('click', function() {
+                const params = new URLSearchParams(window.location.search);
+                const currentPrayer = '{{ prayerActive ? "1" : "0" }}';
+                
+                if (currentPrayer === '1') {
+                    // Désactiver la prière
+                    params.delete('prayer');
+                } else {
+                    // Activer la prière
+                    params.set('prayer', '1');
+                }
+                
+                const url = '{{ path('guild_stock_index') }}' + (params.toString() ? '?' + params.toString() : '');
+                window.location.href = url;
             });
         });
     </script>

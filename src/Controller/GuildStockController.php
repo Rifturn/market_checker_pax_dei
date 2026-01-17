@@ -6,22 +6,25 @@ use App\Repository\GuildStockRepository;
 use App\Repository\ItemRecipeRepository;
 use App\Repository\AvatarRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 #[IsGranted('ROLE_USER')]
 class GuildStockController extends AbstractController
 {
     #[Route('/guild-stock', name: 'guild_stock_index')]
     public function index(
+        Request $request,
         GuildStockRepository $stockRepository, 
         ItemRecipeRepository $recipeRepository,
-        AvatarRepository $avatarRepository,
-        HttpClientInterface $httpClient
+        AvatarRepository $avatarRepository
     ): Response
     {
+        // Récupérer le paramètre de prière
+        $prayerActive = $request->query->get('prayer', '0') === '1';
+        
         $stocks = $stockRepository->findBy([], ['updatedAt' => 'DESC']);
 
         // Récupérer les recettes pour tous les items en stock
@@ -41,71 +44,11 @@ class GuildStockController extends AbstractController
         $craftableByAvatars = [];
         
         foreach ($recipes as $recipe) {
-            $outputExternalId = $recipe->getOutput()->getExternalId();
+            $output = $recipe->getOutput();
+            $capableAvatars = $this->getCapableAvatarsFromDatabase($output, $allAvatars, $prayerActive);
             
-            try {
-                // Récupérer la liste des recettes depuis l'API
-                $recipesListUrl = 'https://data-cdn.gaming.tools/paxdei/data/fr/recipe.json?version=1767546126039';
-                $response = $httpClient->request('GET', $recipesListUrl);
-                $allRecipes = $response->toArray();
-                
-                // Trouver la recette correspondante
-                foreach ($allRecipes as $apiRecipe) {
-                    if (isset($apiRecipe['outputs']) && is_array($apiRecipe['outputs'])) {
-                        foreach ($apiRecipe['outputs'] as $output) {
-                            if (isset($output['entity']['id']) && $output['entity']['id'] === $outputExternalId) {
-                                // Récupérer les détails de la recette
-                                $recipeDetailUrl = sprintf(
-                                    'https://data-cdn.gaming.tools/paxdei/data/fr/recipe/%s.json?version=1767546126039',
-                                    $apiRecipe['id']
-                                );
-                                
-                                $detailResponse = $httpClient->request('GET', $recipeDetailUrl);
-                                $recipeDetail = $detailResponse->toArray();
-                                
-                                // Récupérer le skill requis
-                                $skillRequiredData = $recipeDetail['skillRequired'] ?? null;
-                                $skillRequired = is_array($skillRequiredData) 
-                                    ? ($skillRequiredData['id'] ?? null) 
-                                    : $skillRequiredData;
-                                
-                                // Vérifier quels avatars peuvent le crafter
-                                $capableAvatars = [];
-                                
-                                if ($skillRequired && isset($recipeDetail['craftingStats'])) {
-                                    foreach ($allAvatars as $avatar) {
-                                        foreach ($avatar->getAvatarSkills() as $avatarSkill) {
-                                            if ($avatarSkill->getSkill()->getExternalId() === $skillRequired) {
-                                                $currentLevel = $avatarSkill->getLevel();
-                                                
-                                                // Trouver la probabilité pour ce niveau
-                                                foreach ($recipeDetail['craftingStats'] as $stat) {
-                                                    if (isset($stat['level']) && $stat['level'] == $currentLevel) {
-                                                        $currentProbability = $stat['calculatedProbability'] ?? 0;
-                                                        
-                                                        if ($currentProbability > 0.8) {
-                                                            $capableAvatars[] = [
-                                                                'avatar' => $avatar,
-                                                                'probability' => $currentProbability,
-                                                            ];
-                                                        }
-                                                        break;
-                                                    }
-                                                }
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                
-                                $craftableByAvatars[$recipe->getIngredient()->getId()] = $capableAvatars;
-                                break 2; // Sortir des deux boucles
-                            }
-                        }
-                    }
-                }
-            } catch (\Exception $e) {
-                // En cas d'erreur, continuer sans les infos de craft
+            if (!empty($capableAvatars)) {
+                $craftableByAvatars[$recipe->getIngredient()->getId()] = $capableAvatars;
             }
         }
 
@@ -113,6 +56,57 @@ class GuildStockController extends AbstractController
             'stocks' => $stocks,
             'recipes' => $recipesByItem,
             'craftableByAvatars' => $craftableByAvatars,
+            'prayerActive' => $prayerActive,
         ]);
+    }
+    
+    private function getCapableAvatarsFromDatabase($item, $allAvatars, bool $prayerActive = false): array
+    {
+        $capableAvatars = [];
+        
+        // Récupérer les données de recette depuis la base de données
+        $recipeData = $item->getRecipeData();
+        
+        if (!$recipeData || !isset($recipeData['skillRequired']) || !isset($recipeData['craftingStats'])) {
+            return [];
+        }
+        
+        $skillRequired = $recipeData['skillRequired'];
+        $craftingStats = $recipeData['craftingStats'];
+        
+        // Calculer les avatars capables de crafter (>80% de réussite)
+        foreach ($allAvatars as $avatar) {
+            // Trouver le skill correspondant dans l'avatar
+            foreach ($avatar->getAvatarSkills() as $avatarSkill) {
+                if ($avatarSkill->getSkill()->getExternalId() === $skillRequired) {
+                    $currentLevel = $avatarSkill->getLevel();
+                    
+                    // Si la prière est active, ajouter +1 au niveau
+                    $effectiveLevel = $prayerActive ? $currentLevel + 1 : $currentLevel;
+                    
+                    // Trouver la probabilité pour ce niveau effectif
+                    foreach ($craftingStats as $stat) {
+                        if (isset($stat['level']) && $stat['level'] == $effectiveLevel) {
+                            $currentProbability = $stat['calculatedProbability'] ?? 0;
+                            
+                            // Si la probabilité actuelle est > 80%, ajouter l'avatar
+                            if ($currentProbability > 0.8) {
+                                $capableAvatars[] = [
+                                    'avatar' => $avatar,
+                                    'level' => $currentLevel,
+                                    'effectiveLevel' => $effectiveLevel,
+                                    'probability' => $currentProbability,
+                                ];
+                            }
+                            break;
+                        }
+                    }
+                    
+                    break;
+                }
+            }
+        }
+        
+        return $capableAvatars;
     }
 }
