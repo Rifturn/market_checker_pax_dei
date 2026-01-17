@@ -93,6 +93,16 @@
                                 </select>
                             </th>
                             <th>
+                                Type armure
+                                <br>
+                                <select name="armorType" class="form-select form-select-sm mt-1" id="filterArmorType">
+                                    <option value="all">Tous</option>
+                                    <option value="L">🧵 Tissu</option>
+                                    <option value="M">🦌 Cuir</option>
+                                    <option value="P">🛡️ Plaque</option>
+                                </select>
+                            </th>
+                            <th>
                                 Qualité
                                 <br>
                                 <select name="quality" class="form-select form-select-sm mt-1" id="filterQuality">
@@ -170,6 +180,23 @@
                                             🛡️ Main secondaire
                                         {% else %}
                                             ⚔️ Main principale
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted fst-italic">-</span>
+                                    {% endif %}
+                                </td>
+                                
+                                {# Type d'armure #}
+                                <td>
+                                    {% if item.armorType %}
+                                        {% if item.armorType == 'L' %}
+                                            <span class="badge bg-info">🧵 Tissu</span>
+                                        {% elseif item.armorType == 'M' %}
+                                            <span class="badge bg-warning text-dark">🦌 Cuir</span>
+                                        {% elseif item.armorType == 'P' %}
+                                            <span class="badge bg-secondary">🛡️ Plaque</span>
+                                        {% else %}
+                                            <span class="badge bg-light text-dark">{{ item.armorType }}</span>
                                         {% endif %}
                                     {% else %}
                                         <span class="text-muted fst-italic">-</span>
@@ -270,7 +297,7 @@
     <script>
         $(document).ready(function() {
             const table = $('#equipmentTable').DataTable({
-                order: [[3, 'desc'], [1, 'asc']], // Trier par qualité puis par nom
+                order: [[4, 'desc'], [1, 'asc']], // Trier par qualité puis par nom (colonne qualité déplacée)
                 pageLength: 50,
                 language: {
                     url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json',
@@ -278,17 +305,18 @@
                     searchPlaceholder: "Nom, slot, relique..."
                 },
                 columnDefs: [
-                    { orderable: false, targets: [0, 6] } // Désactiver le tri sur les icônes et actions
+                    { orderable: false, targets: [0, 7] } // Désactiver le tri sur les icônes et actions (colonne actions déplacée)
                 ]
             });
             
             // Empêcher le tri de la colonne quand on clique sur les selects
-            $('#filterSlot, #filterQuality').on('click', function(e) {
+            $('#filterSlot, #filterArmorType, #filterQuality').on('click', function(e) {
                 e.stopPropagation();
             });
             
             // Sauvegarder les valeurs précédentes pour éviter les faux changements
             let previousSlot = $('#filterSlot').val();
+            let previousArmorType = $('#filterArmorType').val();
             let previousQuality = $('#filterQuality').val();
             
             // Gérer le filtre de slot
@@ -322,6 +350,32 @@
                 }
             });
             
+            // Gérer le filtre de type d'armure
+            $('#filterArmorType').on('change', function() {
+                const armorType = $(this).val();
+                
+                // Ne filtrer que si la valeur a vraiment changé
+                if (armorType === previousArmorType) {
+                    return;
+                }
+                previousArmorType = armorType;
+                
+                // Mapper les valeurs de type d'armure vers le texte affiché
+                const armorTypeMapping = {
+                    'L': 'Tissu',
+                    'M': 'Cuir',
+                    'P': 'Plaque'
+                };
+                
+                // Filtrer directement dans le DataTable
+                if (armorType !== 'all') {
+                    const searchTerm = armorTypeMapping[armorType] || armorType;
+                    table.column(3).search(searchTerm).draw();
+                } else {
+                    table.column(3).search('').draw();
+                }
+            });
+            
             // Gérer le filtre de qualité
             $('#filterQuality').on('change', function() {
                 const quality = $(this).val();
@@ -341,14 +395,15 @@
                 // Filtrer directement dans le DataTable
                 if (quality !== 'all') {
                     const searchTerm = qualityMapping[quality] || quality;
-                    table.column(3).search(searchTerm).draw();
+                    table.column(4).search(searchTerm).draw();
                 } else {
-                    table.column(3).search('').draw();
+                    table.column(4).search('').draw();
                 }
             });
             
             // Restaurer les filtres depuis le localStorage
             const savedSlot = localStorage.getItem('equipmentTable_slot');
+            const savedArmorType = localStorage.getItem('equipmentTable_armorType');
             const savedQuality = localStorage.getItem('equipmentTable_quality');
             const savedSearch = localStorage.getItem('equipmentTable_search');
             
@@ -369,6 +424,18 @@
                 table.column(2).search(searchTerm).draw();
             }
             
+            if (savedArmorType && savedArmorType !== 'all') {
+                $('#filterArmorType').val(savedArmorType);
+                previousArmorType = savedArmorType;
+                const armorTypeMapping = {
+                    'L': 'Tissu',
+                    'M': 'Cuir',
+                    'P': 'Plaque'
+                };
+                const searchTerm = armorTypeMapping[savedArmorType] || savedArmorType;
+                table.column(3).search(searchTerm).draw();
+            }
+            
             if (savedQuality && savedQuality !== 'all') {
                 $('#filterQuality').val(savedQuality);
                 previousQuality = savedQuality;
@@ -377,7 +444,7 @@
                     'uncommon': 'Uncommon'
                 };
                 const searchTerm = qualityMapping[savedQuality] || savedQuality;
-                table.column(3).search(searchTerm).draw();
+                table.column(4).search(searchTerm).draw();
             }
             
             if (savedSearch) {
@@ -387,6 +454,10 @@
             // Sauvegarder les filtres quand ils changent
             $('#filterSlot').on('change', function() {
                 localStorage.setItem('equipmentTable_slot', $(this).val());
+            });
+            
+            $('#filterArmorType').on('change', function() {
+                localStorage.setItem('equipmentTable_armorType', $(this).val());
             });
             
             $('#filterQuality').on('change', function() {
