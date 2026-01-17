@@ -48,6 +48,38 @@
                             </div>
                             <div class="card-body">
                                 {% if data.hasRecipe and data.ingredients is not empty %}
+                                    <!-- Checkbox pour l'item final (le stuff lui-même) -->
+                                    <h6 class="text-muted mb-3">🎯 Item final :</h6>
+                                    <div class="row mb-4">
+                                        <div class="col-md-12">
+                                            <div class="form-check ingredient-item p-3 border rounded border-primary bg-light">
+                                                {% set uniqueId = 'item-final-' ~ data.item.id %}
+                                                <input class="form-check-input ingredient-checkbox" 
+                                                       type="checkbox" 
+                                                       name="items[]" 
+                                                       value="{{ data.item.id }}"
+                                                       id="{{ uniqueId }}"
+                                                       data-quality="{{ data.item.quality ?? 'common' }}">
+                                                <label class="form-check-label w-100" for="{{ uniqueId }}">
+                                                    <div class="d-flex align-items-center">
+                                                        {% if data.item.iconPath %}
+                                                            <img src="{{ data.item.iconPath }}" alt="" class="me-2" style="width: 48px; height: 48px;">
+                                                        {% endif %}
+                                                        <div class="flex-grow-1">
+                                                            <div class="fw-bold fs-5">{{ data.itemName }}</div>
+                                                            <small class="text-muted">
+                                                                {% if data.item.quality %}
+                                                                    <span class="quality-badge">{{ data.item.quality|upper }}</span> | 
+                                                                {% endif %}
+                                                                Type: Stuff final
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
                                     <!-- Item a une recette, on affiche les ingrédients -->
                                     <h6 class="text-muted mb-3">📦 Ingrédients de craft :</h6>
                                     <div class="row">

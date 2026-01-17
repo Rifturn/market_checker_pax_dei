@@ -27,9 +27,9 @@
 {% endblock %}
 
 {% block body %}
-<div class="container mt-4">
-    <h1>🔮 Mapping Reliques → Équipements</h1>
-    <p class="text-muted">Découvrez quel équipement est crafté avec chaque relique</p>
+<div class="container-fluid mt-4">
+    <h1>🔮 Équipements Craftables</h1>
+    <p class="text-muted">Découvrez les équipements craftables avec leurs reliques associées</p>
     
     <div class="section-divider"></div>
 
@@ -39,114 +39,222 @@
             <div class="card bg-primary text-white">
                 <div class="card-body text-center">
                     <h3 class="mb-0">{{ totalRecipes }}</h3>
-                    <p class="mb-0">Recettes trouvées</p>
+                    <p class="mb-0">Équipements avec reliques</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ craftableItems|length }}</h3>
+                    <p class="mb-0">Total équipements</p>
                 </div>
             </div>
         </div>
     </div>
 
-    {# Tableau des mappings #}
+    {# Bouton de prière #}
+    <div class="mb-3">
+        <button type="button" class="btn btn-{% if prayerActive %}warning{% else %}outline-secondary{% endif %} btn-lg" id="prayerButton" style="border: 3px solid {% if prayerActive %}#ffc107{% else %}#6c757d{% endif %}; font-weight: bold;">
+            {% if prayerActive %}
+                ✨ Prière ACTIVÉE (+1 niveau)
+            {% else %}
+                🙏 Activer la prière (+1 niveau)
+            {% endif %}
+        </button>
+        {% if prayerActive %}
+        <small class="text-muted ms-2">Tous les avatars gagnent +1 niveau de craft</small>
+        {% endif %}
+    </div>
+
+    {# Tableau unifié #}
     <div class="card">
         <div class="card-body">
-            {% if recipes|length > 0 %}
+            {% if craftableItems|length > 0 %}
             <div class="table-responsive">
-                <table class="table table-striped table-hover" id="mappingTable">
+                <table class="table table-striped table-hover" id="equipmentTable">
                     <thead>
                         <tr>
-                            <th colspan="2">Relique (Ingrédient)</th>
-                            <th style="width: 80px; text-align: center;">→</th>
-                            <th colspan="2">Équipement Crafté</th>
+                            <th>Icône</th>
+                            <th>Équipement</th>
+                            <th>
+                                Slot
+                                <br>
+                                <select name="slot" class="form-select form-select-sm mt-1" id="filterSlot">
+                                    <option value="all">Tous</option>
+                                    <option value="helmet">🪖 Casque</option>
+                                    <option value="chest">🎽 Torse</option>
+                                    <option value="gloves">🧤 Gants</option>
+                                    <option value="bracers">🛡️ Brassards</option>
+                                    <option value="legs">👖 Jambes</option>
+                                    <option value="boots">👢 Bottes</option>
+                                    <option value="mainHand">⚔️ Main principale</option>
+                                    <option value="offHand">🛡️ Main secondaire</option>
+                                </select>
+                            </th>
+                            <th>
+                                Qualité
+                                <br>
+                                <select name="quality" class="form-select form-select-sm mt-1" id="filterQuality">
+                                    <option value="all">Toutes</option>
+                                    <option value="rare">🔵 Rare</option>
+                                    <option value="uncommon">🟢 Uncommon</option>
+                                </select>
+                            </th>
+                            <th>Relique requise</th>
                             <th>Avatars capables</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for recipe in recipes %}
-                        <tr class="mapping-row">
-                            {# Relique #}
-                            <td style="width: 60px;">
-                                {% if recipe.relic.iconPath %}
-                                <img src="{{ recipe.relic.iconPath }}" 
-                                     alt="{{ recipe.relicName }}" 
-                                     class="item-icon">
-                                {% else %}
-                                <div class="item-icon bg-secondary d-flex align-items-center justify-content-center">
-                                    <span class="text-white">?</span>
-                                </div>
+                        {% for item in craftableItems %}
+                            {% set recipeData = null %}
+                            {% for recipe in recipes %}
+                                {% if recipe.equipment.id == item.id %}
+                                    {% set recipeData = recipe %}
                                 {% endif %}
-                            </td>
-                            <td>
-                                <strong class="{% if recipe.relic.quality == 'rare' %}text-primary{% elseif recipe.relic.quality == 'uncommon' %}text-success{% endif %}">
-                                    {{ recipe.relicName }}
-                                </strong>
-                            </td>
+                            {% endfor %}
                             
-                            {# Flèche #}
-                            <td class="text-center">
-                                <span class="arrow-icon">→</span>
-                            </td>
-                            
-                            {# Équipement #}
-                            <td style="width: 60px;">
-                                {% if recipe.equipment.iconPath %}
-                                <img src="{{ recipe.equipment.iconPath }}" 
-                                     alt="{{ recipe.equipmentName }}" 
-                                     class="item-icon">
-                                {% else %}
-                                <div class="item-icon bg-secondary d-flex align-items-center justify-content-center">
-                                    <span class="text-white">?</span>
-                                </div>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <strong class="{% if recipe.equipment.quality == 'rare' %}text-primary{% elseif recipe.equipment.quality == 'uncommon' %}text-success{% endif %}">
-                                    {{ recipe.equipmentName }}
-                                </strong>
-                                {% if recipe.equipment.category %}
-                                    <br>
-                                    <span class="badge bg-info">{{ recipe.equipment.category.name }}</span>
-                                {% endif %}
-                            </td>
-                            
-                            {# Avatars capables #}
-                            <td>
-                                {% if recipe.capableAvatars|length > 0 %}
-                                    {% for avatarInfo in recipe.capableAvatars %}
-                                        <span class="badge bg-success me-1 mb-1" title="Niveau {{ avatarInfo.level }} - {{ (avatarInfo.probability * 100)|round }}% de réussite">
-                                            👤 {{ avatarInfo.avatar.name }}
-                                        </span>
-                                    {% endfor %}
-                                {% else %}
-                                    <span class="text-muted">Aucun avatar</span>
-                                {% endif %}
-                            </td>
-                            
-                            {# Actions #}
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <a href="{{ path('item_show', {'id': recipe.relic.id}) }}" 
-                                       class="btn btn-sm btn-outline-primary" 
-                                       title="Voir la relique">
-                                        🔮
-                                    </a>
-                                    <a href="{{ path('item_show', {'id': recipe.equipment.id}) }}" 
-                                       class="btn btn-sm btn-outline-success" 
-                                       title="Voir l'équipement">
-                                        ⚔️
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
+                            <tr>
+                                {# Équipement #}
+                                <td style="width: 60px;">
+                                    {% if item.iconPath %}
+                                    <img src="{{ item.iconPath }}" 
+                                         alt="{{ item.name['Fr'] ?? item.name['En'] }}" 
+                                         class="item-icon" loading="lazy">
+                                    {% else %}
+                                    <div class="item-icon bg-secondary d-flex align-items-center justify-content-center">
+                                        <span class="text-white">?</span>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong class="{% if item.quality == 'rare' %}text-primary{% elseif item.quality == 'uncommon' %}text-success{% endif %}">
+                                        {{ item.name['Fr'] ?? item.name['En'] ?? item.externalId }}
+                                    </strong>
+                                </td>
+                                
+                                {# Slot #}
+                                <td>
+                                    {% if item.slotCategory %}
+                                        {% set slotParts = item.slotCategory|split('.') %}
+                                        {% set slotRaw = slotParts|last|lower %}
+                                        
+                                        {# Mapping complet des slots #}
+                                        {% set slotLabel = '' %}
+                                        {% if slotRaw in ['helmet', 'head'] %}
+                                            {% set slotLabel = '🪖 Casque' %}
+                                        {% elseif slotRaw in ['chest', 'torso'] %}
+                                            {% set slotLabel = '🎽 Torse' %}
+                                        {% elseif slotRaw == 'gloves' %}
+                                            {% set slotLabel = '🧤 Gants' %}
+                                        {% elseif slotRaw in ['bracers', 'wrists'] %}
+                                            {% set slotLabel = '🛡️ Brassards' %}
+                                        {% elseif slotRaw == 'legs' %}
+                                            {% set slotLabel = '👖 Jambes' %}
+                                        {% elseif slotRaw in ['boots', 'feet'] %}
+                                            {% set slotLabel = '👢 Bottes' %}
+                                        {% elseif slotRaw in ['mainhand', 'righthand', 'weapon'] %}
+                                            {% set slotLabel = '⚔️ Main principale' %}
+                                        {% elseif slotRaw in ['offhand', 'lefthand', 'shield'] %}
+                                            {% set slotLabel = '🛡️ Main secondaire' %}
+                                        {% else %}
+                                            {% set slotLabel = slotRaw %}
+                                        {% endif %}
+                                        
+                                        {{ slotLabel }}
+                                    {% elseif item.type == 'wieldable' %}
+                                        {# Pour les armes sans slot défini, détecter les boucliers (écus) #}
+                                        {% set itemName = (item.name['Fr'] ?? item.name['En'] ?? item.externalId)|lower %}
+                                        {% if 'écu' in itemName or 'ecu' in itemName or 'shield' in itemName %}
+                                            🛡️ Main secondaire
+                                        {% else %}
+                                            ⚔️ Main principale
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted fst-italic">-</span>
+                                    {% endif %}
+                                </td>
+                                
+                                {# Qualité #}
+                                <td>
+                                    {% if item.quality == 'rare' %}
+                                        <span class="badge bg-primary">🔵 Rare</span>
+                                    {% elseif item.quality == 'uncommon' %}
+                                        <span class="badge bg-success">🟢 Uncommon</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ item.quality|upper }}</span>
+                                    {% endif %}
+                                </td>
+                                
+                                {# Relique #}
+                                <td>
+                                    {% if recipeData %}
+                                        <div class="d-flex align-items-center gap-2">
+                                            {% if recipeData.relic.iconPath %}
+                                            <img src="{{ recipeData.relic.iconPath }}" 
+                                                 alt="{{ recipeData.relicName }}" 
+                                                 style="width: 32px; height: 32px;">
+                                            {% endif %}
+                                            <strong class="{% if recipeData.relic.quality == 'rare' %}text-primary{% endif %}">
+                                                {{ recipeData.relicName }}
+                                            </strong>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted fst-italic">Aucune</span>
+                                    {% endif %}
+                                </td>
+                                
+                                {# Avatars capables #}
+                                <td>
+                                    {% if recipeData and recipeData.capableAvatars|length > 0 %}
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% for avatarInfo in recipeData.capableAvatars %}
+                                                <span class="badge bg-success" title="Niveau {{ avatarInfo.level }}{% if prayerActive %} (+1 prière = {{ avatarInfo.effectiveLevel }}){% endif %} - {{ (avatarInfo.probability * 100)|round }}% de réussite">
+                                                    👤 {{ avatarInfo.avatar.name }} ({% if prayerActive %}{{ avatarInfo.effectiveLevel }}{% else %}{{ avatarInfo.level }}{% endif %})
+                                                </span>
+                                            {% endfor %}
+                                        </div>
+                                    {% elseif craftableAvatars[item.id] is defined and craftableAvatars[item.id]|length > 0 %}
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% for avatarInfo in craftableAvatars[item.id] %}
+                                                <span class="badge bg-success" title="Niveau {{ avatarInfo.level }}{% if prayerActive %} (+1 prière = {{ avatarInfo.effectiveLevel }}){% endif %} - {{ (avatarInfo.probability * 100)|round }}% de réussite">
+                                                    👤 {{ avatarInfo.avatar.name }} ({% if prayerActive %}{{ avatarInfo.effectiveLevel }}{% else %}{{ avatarInfo.level }}{% endif %})
+                                                </span>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted fst-italic">-</span>
+                                    {% endif %}
+                                </td>
+                                
+                                {# Actions #}
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ path('item_show', {'id': item.id}) }}" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           title="Voir les détails">
+                                            👁️
+                                        </a>
+                                        {% if item.url %}
+                                        <a href="{{ item.url }}" 
+                                           target="_blank" 
+                                           class="btn btn-sm btn-outline-secondary" 
+                                           title="Voir sur gaming.tools">
+                                            🔗
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
             {% else %}
             <div class="alert alert-warning">
-                <strong>Aucun mapping trouvé</strong><br>
-                Aucune relation entre reliques et équipements n'a été trouvée.
-                <br><br>
-                Utilisez la commande <code>php bin/console app:analyze-relic-recipes</code> pour générer les mappings.
+                <strong>Aucun équipement trouvé</strong><br>
+                Aucun équipement craftable n'a été trouvé avec les filtres sélectionnés.
             </div>
             {% endif %}
         </div>
@@ -161,17 +269,150 @@
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <script>
         $(document).ready(function() {
-            $('#mappingTable').DataTable({
-                order: [[1, 'asc']], // Trier par nom de relique
-                pageLength: 25,
+            const table = $('#equipmentTable').DataTable({
+                order: [[3, 'desc'], [1, 'asc']], // Trier par qualité puis par nom
+                pageLength: 50,
                 language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json',
-                    search: "Rechercher une relique ou équipement :",
-                    searchPlaceholder: "Nom, ID..."
+                    url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json',
+                    search: "Rechercher :",
+                    searchPlaceholder: "Nom, slot, relique..."
                 },
                 columnDefs: [
-                    { orderable: false, targets: [0, 2, 3, 6] } // Désactiver le tri sur les icônes et actions
+                    { orderable: false, targets: [0, 6] } // Désactiver le tri sur les icônes et actions
                 ]
+            });
+            
+            // Empêcher le tri de la colonne quand on clique sur les selects
+            $('#filterSlot, #filterQuality').on('click', function(e) {
+                e.stopPropagation();
+            });
+            
+            // Sauvegarder les valeurs précédentes pour éviter les faux changements
+            let previousSlot = $('#filterSlot').val();
+            let previousQuality = $('#filterQuality').val();
+            
+            // Gérer le filtre de slot
+            $('#filterSlot').on('change', function() {
+                const slot = $(this).val();
+                
+                // Ne filtrer que si la valeur a vraiment changé
+                if (slot === previousSlot) {
+                    return;
+                }
+                previousSlot = slot;
+                
+                // Mapper les valeurs du slot vers le texte affiché
+                const slotMapping = {
+                    'helmet': 'Casque',
+                    'chest': 'Torse',
+                    'gloves': 'Gants',
+                    'bracers': 'Brassards',
+                    'legs': 'Jambes',
+                    'boots': 'Bottes',
+                    'mainHand': 'Main principale',
+                    'offHand': 'Main secondaire'
+                };
+                
+                // Filtrer directement dans le DataTable
+                if (slot !== 'all') {
+                    const searchTerm = slotMapping[slot] || slot;
+                    table.column(2).search(searchTerm).draw();
+                } else {
+                    table.column(2).search('').draw();
+                }
+            });
+            
+            // Gérer le filtre de qualité
+            $('#filterQuality').on('change', function() {
+                const quality = $(this).val();
+                
+                // Ne filtrer que si la valeur a vraiment changé
+                if (quality === previousQuality) {
+                    return;
+                }
+                previousQuality = quality;
+                
+                // Mapper les valeurs de qualité vers le texte affiché
+                const qualityMapping = {
+                    'rare': 'Rare',
+                    'uncommon': 'Uncommon'
+                };
+                
+                // Filtrer directement dans le DataTable
+                if (quality !== 'all') {
+                    const searchTerm = qualityMapping[quality] || quality;
+                    table.column(3).search(searchTerm).draw();
+                } else {
+                    table.column(3).search('').draw();
+                }
+            });
+            
+            // Restaurer les filtres depuis le localStorage
+            const savedSlot = localStorage.getItem('equipmentTable_slot');
+            const savedQuality = localStorage.getItem('equipmentTable_quality');
+            const savedSearch = localStorage.getItem('equipmentTable_search');
+            
+            if (savedSlot && savedSlot !== 'all') {
+                $('#filterSlot').val(savedSlot);
+                previousSlot = savedSlot;
+                const slotMapping = {
+                    'helmet': 'Casque',
+                    'chest': 'Torse',
+                    'gloves': 'Gants',
+                    'bracers': 'Brassards',
+                    'legs': 'Jambes',
+                    'boots': 'Bottes',
+                    'mainHand': 'Main principale',
+                    'offHand': 'Main secondaire'
+                };
+                const searchTerm = slotMapping[savedSlot] || savedSlot;
+                table.column(2).search(searchTerm).draw();
+            }
+            
+            if (savedQuality && savedQuality !== 'all') {
+                $('#filterQuality').val(savedQuality);
+                previousQuality = savedQuality;
+                const qualityMapping = {
+                    'rare': 'Rare',
+                    'uncommon': 'Uncommon'
+                };
+                const searchTerm = qualityMapping[savedQuality] || savedQuality;
+                table.column(3).search(searchTerm).draw();
+            }
+            
+            if (savedSearch) {
+                table.search(savedSearch).draw();
+            }
+            
+            // Sauvegarder les filtres quand ils changent
+            $('#filterSlot').on('change', function() {
+                localStorage.setItem('equipmentTable_slot', $(this).val());
+            });
+            
+            $('#filterQuality').on('change', function() {
+                localStorage.setItem('equipmentTable_quality', $(this).val());
+            });
+            
+            // Sauvegarder la recherche
+            table.on('search.dt', function() {
+                localStorage.setItem('equipmentTable_search', table.search());
+            });
+            
+            // Gérer le bouton de prière
+            $('#prayerButton').on('click', function() {
+                const params = new URLSearchParams(window.location.search);
+                const currentPrayer = '{{ prayerActive ? "1" : "0" }}';
+                
+                if (currentPrayer === '1') {
+                    // Désactiver la prière
+                    params.delete('prayer');
+                } else {
+                    // Activer la prière
+                    params.set('prayer', '1');
+                }
+                
+                const url = '{{ path('relic_mapping') }}' + (params.toString() ? '?' + params.toString() : '');
+                window.location.href = url;
             });
         });
     </script>

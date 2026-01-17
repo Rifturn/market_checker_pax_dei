@@ -3,9 +3,11 @@
 namespace App\Controller;
 
 use App\Repository\ItemRecipeRepository;
+use App\Repository\ItemEntityRepository;
 use App\Repository\CategoryRepository;
 use App\Repository\AvatarRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -13,16 +15,41 @@ class RelicController extends AbstractController
 {
     #[Route('/relics/mapping', name: 'relic_mapping')]
     public function mapping(
+        Request $request,
         ItemRecipeRepository $recipeRepository, 
+        ItemEntityRepository $itemRepository,
         CategoryRepository $categoryRepository,
         AvatarRepository $avatarRepository
     ): Response
     {
+        // Récupérer le paramètre de prière
+        $prayerActive = $request->query->get('prayer', '0') === '1';
+        
         // Récupérer la catégorie des reliques
         $relicCategory = $categoryRepository->findOneBy(['name' => 'Reliques']);
         
         // Récupérer tous les avatars avec leurs skills
         $allAvatars = $avatarRepository->findAllWithUser();
+        
+        // Récupérer les équipements craftables (wearable et wieldable en uncommon et rare)
+        $craftableItems = $itemRepository->createQueryBuilder('i')
+            ->where('i.type IN (:types)')
+            ->andWhere('i.quality IN (:qualities)')
+            ->setParameter('types', ['wearable', 'wieldable'])
+            ->setParameter('qualities', ['uncommon', 'rare'])
+            ->orderBy('i.quality', 'DESC')
+            ->addOrderBy('i.externalId', 'ASC')
+            ->getQuery()
+            ->getResult();
+        
+        // Calculer les avatars capables pour tous les équipements craftables
+        $craftableAvatars = [];
+        foreach ($craftableItems as $item) {
+            $capableAvatars = $this->getCapableAvatarsFromDatabase($item, $allAvatars, $prayerActive);
+            if (!empty($capableAvatars)) {
+                $craftableAvatars[$item->getId()] = $capableAvatars;
+            }
+        }
         
         // Récupérer tous les mappings relique -> équipement
         $recipes = [];
@@ -44,7 +71,7 @@ class RelicController extends AbstractController
                 $output = $recipe->getOutput();
                 
                 // Calculer les avatars capables de crafter l'équipement depuis les données en BDD
-                $capableAvatars = $this->getCapableAvatarsFromDatabase($output, $allAvatars);
+                $capableAvatars = $this->getCapableAvatarsFromDatabase($output, $allAvatars, $prayerActive);
                 
                 $recipes[] = [
                     'relic' => $ingredient,
@@ -65,10 +92,13 @@ class RelicController extends AbstractController
         return $this->render('relic/mapping.html.twig', [
             'recipes' => $recipes,
             'totalRecipes' => count($recipes),
+            'craftableItems' => $craftableItems,
+            'craftableAvatars' => $craftableAvatars,
+            'prayerActive' => $prayerActive,
         ]);
     }
     
-    private function getCapableAvatarsFromDatabase($item, $allAvatars): array
+    private function getCapableAvatarsFromDatabase($item, $allAvatars, bool $prayerActive = false): array
     {
         $capableAvatars = [];
         
@@ -89,9 +119,12 @@ class RelicController extends AbstractController
                 if ($avatarSkill->getSkill()->getExternalId() === $skillRequired) {
                     $currentLevel = $avatarSkill->getLevel();
                     
-                    // Trouver la probabilité pour ce niveau
+                    // Si la prière est active, ajouter +1 au niveau
+                    $effectiveLevel = $prayerActive ? $currentLevel + 1 : $currentLevel;
+                    
+                    // Trouver la probabilité pour ce niveau effectif
                     foreach ($craftingStats as $stat) {
-                        if (isset($stat['level']) && $stat['level'] == $currentLevel) {
+                        if (isset($stat['level']) && $stat['level'] == $effectiveLevel) {
                             $currentProbability = $stat['calculatedProbability'] ?? 0;
                             
                             // Si la probabilité actuelle est > 80%, ajouter l'avatar
@@ -99,6 +132,7 @@ class RelicController extends AbstractController
                                 $capableAvatars[] = [
                                     'avatar' => $avatar,
                                     'level' => $currentLevel,
+                                    'effectiveLevel' => $effectiveLevel,
                                     'probability' => $currentProbability,
                                 ];
                             }
