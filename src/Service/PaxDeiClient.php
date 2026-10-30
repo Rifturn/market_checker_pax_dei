@@ -9,7 +9,10 @@ class PaxDeiClient
 {
     private const ITEMS_URL = 'https://data-cdn.gaming.tools/paxdei/market/items.json';
     private const BASE_URL = 'https://data-cdn.gaming.tools/paxdei/market/demeter/';
-    
+    // Le JSON renvoie encore l'ancien CDN (gtcdn.info, en 404) : même chemin, nouveau domaine
+    private const OLD_ICON_HOST = 'https://gtcdn.info/';
+    private const ICON_HOST = 'https://cdn-hosted.gaming.tools/';
+
     private const MAPS = [
         'merrie' => [
             'shire', 'yarborn', 'caster', 'gael', 'nene', 'ulaid', 'wiht', 'ardbog', 'down', 'bearm'
@@ -76,7 +79,7 @@ class PaxDeiClient
         $items = [];
         foreach ($data as $itemData) {
             $url = $itemData['url'] ?? '';
-            $iconPath = $itemData['iconPath'] ?? '';
+            $iconPath = str_replace(self::OLD_ICON_HOST, self::ICON_HOST, $itemData['iconPath'] ?? '');
             // Utiliser iconPath en priorité pour la catégorisation
             $category = $this->extractCategoryFromIconPath($iconPath);
             $items[] = new Item(
