@@ -24,6 +24,6 @@ class SpellExtension extends AbstractExtension
         $iconPath = preg_replace('/\{height\}/', '128', $iconPath);
 
         // Ajouter le préfixe
-        return 'https://gtcdn.info/paxdei' . $iconPath;
+        return 'https://cdn-hosted.gaming.tools/paxdei' . $iconPath;
     }
 }
